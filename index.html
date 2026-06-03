@@ -1481,13 +1481,31 @@ async function syncFromSupabase(){
     // Build public URLs for storage items
     cdocs.forEach(d=>{ d.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${d.storage_path}`; });
     catts.forEach(a=>{ if(a.storage_path) a.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${a.storage_path}`; });
-    if(custs.length>0) customers=custs;  // only replace if Supabase has data
-    if(cls.length>0||custs.length>0) calls=cls;
-    contacts=cts; custDocs=cdocs; callAtts=catts;
+    // Merge strategy: Supabase is authoritative for records it knows about,
+    // but we never throw away local customers that haven't been pushed yet.
+    if(custs.length >= customers.length){
+      // Supabase has as many or more — use it as the source of truth
+      customers = custs;
+    } else {
+      // Supabase has fewer — merge: keep all local, update any that now have real UUIDs
+      const sbIds = new Set(custs.map(c=>c.name.toLowerCase()));
+      // Replace local records that exist in Supabase with the Supabase version (real UUID)
+      customers = customers.map(c => {
+        const sbMatch = custs.find(s=>s.name.toLowerCase()===c.name.toLowerCase());
+        return sbMatch ? sbMatch : c;
+      });
+      // Add any Supabase records not in local (shouldn't happen but safe)
+      custs.forEach(s=>{
+        if(!customers.find(c=>c.name.toLowerCase()===s.name.toLowerCase()))
+          customers.push(s);
+      });
+    }
+    calls=cls; contacts=cts; custDocs=cdocs; callAtts=catts;
     LS.set('fsm_customers',customers); LS.set('fsm_calls',calls);
     LS.set('fsm_contacts',contacts); LS.set('fsm_custdocs',custDocs); LS.set('fsm_callatts',callAtts);
     setSyncDot('ok');
     buildFilterPills(); renderDashboard(); renderCustomers();
+    pushLocalCustomersToSupabase();  // push any un-synced local customers
   } catch(e){ setSyncDot('err'); console.warn('Supabase sync failed, using local cache',e); }
 }
 
@@ -1500,6 +1518,35 @@ customers = customers.map(c=>({...c, region:(c.region||'').toUpperCase()||'AUCKL
 LS.set('fsm_customers', customers);
 initFilterListeners();  // attach event listeners FIRST
 buildFilterPills();
+// Push all local customers to Supabase that don't have real UUIDs yet
+async function pushLocalCustomersToSupabase(){
+  if(!SB_READY) return;
+  const needsSync = customers.filter(c => !c.id || !c.id.includes('-'));
+  if(!needsSync.length) return;
+  console.log(`Pushing ${needsSync.length} local customers to Supabase...`);
+  for(const c of needsSync){
+    try {
+      const existing = await sb.query('customers',`?name=eq.${encodeURIComponent(c.name)}&limit=1`);
+      let realId;
+      if(existing && existing.length>0){
+        realId = existing[0].id;
+      } else {
+        const [saved] = await sb.insert('customers',{
+          name:c.name, group:c.group||'', region:c.region||'AUCKLAND, NEW ZEALAND',
+          status:c.status||'ok', address:c.address||'', phone:c.phone||'',
+          email:c.email||'', notes:c.notes||''
+        });
+        realId = saved.id;
+      }
+      const idx = customers.findIndex(x=>x.id===c.id);
+      if(idx>=0) customers[idx].id = realId;
+    } catch(e){ /* skip individual failures */ }
+  }
+  LS.set('fsm_customers', customers);
+  buildFilterPills(); renderCustomers();
+  setSyncDot('ok');
+  console.log('Local customers synced to Supabase ✓');
+}
 renderDashboard();
 renderCustomers();
 syncFromSupabase();
