@@ -202,7 +202,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <button class="btn btn-p btn-sm" onclick="openAddCustomer()">+ Add</button>
       </div>
     </div>
-    <input type="file" id="bulk-file" accept=".csv" style="display:none" onchange="handleBulkImport(event)">
+    <input type="file" id="bulk-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkImport(event)">
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
     <div class="frow" id="status-filters">
@@ -1123,29 +1123,101 @@ async function saveContact(){
 // ─────────────────────────────────────────────
 function handleBulkImport(e){
   const file=e.target.files[0]; if(!file) return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx'||ext==='xls'){
+    // Load SheetJS from CDN then parse
+    if(!window.XLSX){
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload=()=>parseXLSX(file);
+      s.onerror=()=>showToast('Could not load Excel parser — try saving as CSV');
+      document.head.appendChild(s);
+    } else {
+      parseXLSX(file);
+    }
+  } else {
+    const reader=new FileReader();
+    reader.onload=ev=>parseImportRows(csvToRows(ev.target.result));
+    reader.readAsText(file);
+  }
+  e.target.value='';
+}
+
+function parseXLSX(file){
   const reader=new FileReader();
   reader.onload=ev=>{
-    const lines=ev.target.result.trim().split('\n');
-    if(lines.length<2){ showToast('CSV empty'); return; }
-    const hdrs=lines[0].split(',').map(h=>h.trim().replace(/['"]/g,'').toLowerCase());
-    const nameI=hdrs.findIndex(h=>h.includes('name')||h==='name');
-    const grpI=hdrs.findIndex(h=>h.includes('group')||h.includes('head')||h.includes('account'));
-    const regI=hdrs.findIndex(h=>h.includes('region'));
-    let added=0;
-    for(let i=1;i<lines.length;i++){
-      const cols=lines[i].split(',').map(c=>c.trim().replace(/['"]/g,''));
-      const name=cols[nameI]||cols[0]; if(!name) continue;
-      if(!customers.some(c=>c.name.toLowerCase()===name.toLowerCase())){
-        customers.push({id:'c'+Date.now()+i,name,group:grpI>=0?cols[grpI]:'',region:regI>=0?cols[regI]:'Auckland, New Zealand',status:'ok',address:'',phone:'',email:'',notes:''});
-        added++;
-      }
-    }
-    LS.set('fsm_customers',customers);
-    buildFilterPills(); renderCustomers();
-    showToast(`Imported ${added} customer${added!==1?'s':''}`);
+    try {
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      parseImportRows(rows);
+    } catch(err){ showToast('Could not read Excel file: '+err.message); }
   };
-  reader.readAsText(file);
-  e.target.value='';
+  reader.readAsArrayBuffer(file);
+}
+
+function csvToRows(text){
+  const lines=text.trim().split('\n');
+  if(lines.length<2) return [];
+  const hdrs=lines[0].split(',').map(h=>h.trim().replace(/['"]/g,''));
+  return lines.slice(1).map(line=>{
+    const cols=line.split(',').map(c=>c.trim().replace(/['"]/g,''));
+    const obj={};
+    hdrs.forEach((h,i)=>obj[h]=cols[i]||'');
+    return obj;
+  });
+}
+
+function parseImportRows(rows){
+  // Find the right columns — handles HEAD ACCOUNT NAME / NAME / NZ_REGION
+  // and also simpler formats like Name / Group / Region
+  const findCol=(row,candidates)=>{
+    const keys=Object.keys(row);
+    for(const c of candidates){
+      const k=keys.find(k=>k.trim().toLowerCase()===c.toLowerCase());
+      if(k) return k;
+    }
+    // fallback: partial match
+    for(const c of candidates){
+      const k=keys.find(k=>k.toLowerCase().includes(c.toLowerCase()));
+      if(k) return k;
+    }
+    return null;
+  };
+  if(!rows.length){ showToast('No data found in file'); return; }
+  const sample=rows[0];
+  const nameCol  = findCol(sample,['NAME','Store Name','Branch Name','name']);
+  const groupCol = findCol(sample,['HEAD ACCOUNT NAME','Group','Head Office','Account','group']);
+  const regionCol= findCol(sample,['NZ_REGION','Region','region']);
+
+  if(!nameCol){ showToast('Cannot find a Name column in this file'); return; }
+
+  let added=0, skipped=0;
+  rows.forEach((row,i)=>{
+    const name=(row[nameCol]||'').trim();
+    // skip blank rows and the "Applied filters" junk row Supabase exports append
+    if(!name || name.toLowerCase().startsWith('applied filter')) return;
+    // skip rows where the name looks like a header repeated
+    if(name.toLowerCase()==='name') return;
+    if(customers.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+      skipped++; return;
+    }
+    const group =(groupCol  ? (row[groupCol] ||'') : '').trim();
+    const region=(regionCol ? (row[regionCol]||'') : 'Auckland, New Zealand').trim()||'Auckland, New Zealand';
+    customers.push({
+      id:'c'+Date.now()+i,
+      name, group, region,
+      status:'ok', address:'', phone:'', email:'', notes:''
+    });
+    added++;
+  });
+
+  LS.set('fsm_customers',customers);
+  buildFilterPills(); renderCustomers();
+  const msg=skipped>0
+    ? `Imported ${added} new · ${skipped} already exist`
+    : `Imported ${added} customer${added!==1?'s':''}`;
+  showToast(msg);
 }
 
 // ─────────────────────────────────────────────
