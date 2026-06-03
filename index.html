@@ -1266,7 +1266,7 @@ async function saveContact(){
   const name=document.getElementById('ct-name').value.trim();
   if(!name){ showToast('Enter contact name'); return; }
   const ctId=document.getElementById('ct-id').value;
-  const data={customer_id:custId,customerId:custId,name,role:document.getElementById('ct-role').value.trim(),phone:document.getElementById('ct-phone').value.trim(),email:document.getElementById('ct-email').value.trim()};
+  const data={customer_id:custId,name,role:document.getElementById('ct-role').value.trim(),phone:document.getElementById('ct-phone').value.trim(),email:document.getElementById('ct-email').value.trim()};
   setSyncDot('syncing');
   try {
     if(ctId){
