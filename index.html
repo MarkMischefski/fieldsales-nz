@@ -206,12 +206,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
     <div class="frow" id="status-filters">
-      <button class="fpill active" onclick="setStatusFilter(this,'all')">All</button>
-      <button class="fpill" onclick="setStatusFilter(this,'ok')">✓ All OK</button>
-      <button class="fpill" onclick="setStatusFilter(this,'risk')">⚠ At Risk</button>
-      <button class="fpill" onclick="setStatusFilter(this,'elsewhere')">✗ Buys Elsewhere</button>
-      <button class="fpill" onclick="setStatusFilter(this,'monitor')">◎ Monitor</button>
-      <button class="fpill" onclick="setStatusFilter(this,'inactive')">– Inactive</button>
+      <button class="fpill active" data-val="all" onclick="setStatusFilter(this,'all')">All</button>
+      <button class="fpill" data-val="ok" onclick="setStatusFilter(this,'ok')">✓ All OK</button>
+      <button class="fpill" data-val="risk" onclick="setStatusFilter(this,'risk')">⚠ At Risk</button>
+      <button class="fpill" data-val="elsewhere" onclick="setStatusFilter(this,'elsewhere')">✗ Buys Elsewhere</button>
+      <button class="fpill" data-val="monitor" onclick="setStatusFilter(this,'monitor')">◎ Monitor</button>
+      <button class="fpill" data-val="inactive" onclick="setStatusFilter(this,'inactive')">– Inactive</button>
     </div>
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
@@ -610,31 +610,56 @@ function buildFilterPills(){
   const regions=[...new Set(customers.map(c=>c.region||'').filter(Boolean))].sort();
 
   const gEl=document.getElementById('group-filters');
-  gEl.innerHTML=`<button class="fpill active" onclick="setGroupFilter(this,'all')">All</button>`
-    +groups.map(g=>`<button class="fpill" onclick="setGroupFilter(this,${JSON.stringify(g)})">${g.replace(' HEAD OFFICE','').replace(' NATIONAL OFFICE - SUPPLIER #14235','').replace(' CO-OPERATIVE LTD','')}</button>`).join('');
+  gEl.innerHTML=`<button class="fpill active" data-val="all" onclick="setGroupFilter(this,'all')">All</button>`
+    +groups.map(g=>{
+      const safe=g.replace(/'/g,"\\'");
+      return `<button class="fpill" data-val="${g.replace(/"/g,'&quot;')}" onclick="setGroupFilter(this,'${safe}')">${shortLabel(g)}</button>`;
+    }).join('');
 
   const rEl=document.getElementById('region-filters');
-  rEl.innerHTML=`<button class="fpill active" onclick="setRegionFilter(this,'all')">All</button>`
-    +regions.map(r=>`<button class="fpill" onclick="setRegionFilter(this,${JSON.stringify(r)})">${r.replace(', NEW ZEALAND','').replace(', NZ','')}</button>`).join('');
+  rEl.innerHTML=`<button class="fpill active" data-val="all" onclick="setRegionFilter(this,'all')">All</button>`
+    +regions.map(r=>{
+      const safe=r.replace(/'/g,"\\'");
+      return `<button class="fpill" data-val="${r.replace(/"/g,'&quot;')}" onclick="setRegionFilter(this,'${safe}')">${shortRegion(r)}</button>`;
+    }).join('');
+
+  highlightPill('group-filters', filterGroup);
+  highlightPill('region-filters', filterRegion);
+}
+
+function shortLabel(g){ return g.replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
+function shortRegion(r){ return r.replace(', NEW ZEALAND','').replace(', NZ',''); }
+
+function highlightPill(containerId, val){
+  document.querySelectorAll(`#${containerId} .fpill`).forEach(p=>{
+    p.classList.toggle('active', p.dataset.val===val);
+  });
 }
 
 function setStatusFilter(btn,f){
   document.querySelectorAll('#status-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active'); filterStatus=f; renderCustomers();
+  btn.classList.add('active');
+  filterStatus=f;
+  renderCustomers();
 }
 function setGroupFilter(btn,f){
   document.querySelectorAll('#group-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active'); filterGroup=f; renderCustomers();
+  btn.classList.add('active');
+  filterGroup=f;
+  renderCustomers();
 }
 function setRegionFilter(btn,f){
   document.querySelectorAll('#region-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active'); filterRegion=f; renderCustomers();
+  btn.classList.add('active');
+  filterRegion=f;
+  renderCustomers();
 }
 function clearAllFilters(){
   filterStatus='all'; filterGroup='all'; filterRegion='all';
-  document.querySelectorAll('#status-filters .fpill')[0].click();
-  document.querySelectorAll('#group-filters .fpill')[0].click();
-  document.querySelectorAll('#region-filters .fpill')[0].click();
+  highlightPill('status-filters','all');
+  highlightPill('group-filters','all');
+  highlightPill('region-filters','all');
+  renderCustomers();
 }
 
 function renderCustomers(){
@@ -646,8 +671,8 @@ function renderCustomers(){
   // update summary bar
   const activeFilters=[];
   if(filterStatus!=='all') activeFilters.push({ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[filterStatus]);
-  if(filterGroup!=='all')  activeFilters.push(filterGroup.replace(' HEAD OFFICE','').replace(' NATIONAL OFFICE - SUPPLIER #14235','').replace(' CO-OPERATIVE LTD',''));
-  if(filterRegion!=='all') activeFilters.push(filterRegion.replace(', NEW ZEALAND','').replace(', NZ',''));
+  if(filterGroup!=='all')  activeFilters.push(shortLabel(filterGroup));
+  if(filterRegion!=='all') activeFilters.push(shortRegion(filterRegion));
   const sumEl=document.getElementById('filter-summary');
   if(activeFilters.length){
     sumEl.style.display='flex';
