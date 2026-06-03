@@ -1,1 +1,1502 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1117">
+<title>FieldSales NZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg2:#181b24;--bg3:#1e2230;--bg4:#242838;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f0f2f8;--text2:#8891a8;--text3:#545d72;--accent:#4f7ef0;--accent2:#3a63cc;--green:#22c97a;--amber:#f5a623;--red:#e84040;--purple:#9b6cf7;--teal:#2dd4bf;--r:12px;--rs:8px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+/* HEADER */
+#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px 12px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+#hdr .logo{font-size:16px;font-weight:600;letter-spacing:-.3px;}
+#hdr .logo span{color:var(--accent);}
+#hdr-actions{display:flex;gap:8px;align-items:center;}
+.icon-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+/* SYNC STATUS */
+#sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:background .3s;}
+#sync-dot.syncing{background:var(--amber);animation:blink 1s infinite;}
+#sync-dot.ok{background:var(--green);}
+#sync-dot.err{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+/* BOTTOM NAV */
+#bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;}
+.ntab{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 14px;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;border:none;background:none;font-family:'DM Sans',sans-serif;transition:color .15s;letter-spacing:.2px;}
+.ntab svg{width:22px;height:22px;}
+.ntab.active{color:var(--accent);}
+/* MAIN */
+#main{padding:0 0 90px;}
+.view{display:none;}
+.view.active{display:block;}
+/* PAGE HEADER */
+.phdr{padding:20px 18px 10px;display:flex;align-items:center;justify-content:space-between;}
+.phdr h1{font-size:22px;font-weight:600;letter-spacing:-.5px;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:var(--rs);padding:9px 16px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .15s;}
+.btn:active{transform:scale(.97);}
+.btn-p{background:var(--accent);color:#fff;}
+.btn-p:active{background:var(--accent2);}
+.btn-s{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-s:active{background:var(--bg4);}
+.btn-sm{padding:7px 12px;font-size:13px;}
+.btn-danger{background:rgba(232,64,64,.15);color:var(--red);border:1px solid rgba(232,64,64,.2);}
+/* STATUS */
+.sbadge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:500;}
+.s-ok{background:rgba(34,201,122,.12);color:var(--green);}
+.s-risk{background:rgba(245,166,35,.12);color:var(--amber);}
+.s-elsewhere{background:rgba(232,64,64,.12);color:var(--red);}
+.s-inactive{background:rgba(84,93,114,.15);color:var(--text3);}
+.s-monitor{background:rgba(155,108,247,.12);color:var(--purple);}
+/* CARDS */
+.clist{padding:0 18px;}
+.glabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:20px 0 8px;}
+.ccard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.ccard:active{border-color:var(--accent);}
+.cc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.cc-name{font-size:14px;font-weight:600;line-height:1.3;flex:1;}
+.cc-meta{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.cc-meta span{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;}
+/* FILTER */
+.frow{display:flex;gap:8px;padding:0 18px 14px;overflow-x:auto;scrollbar-width:none;}
+.frow::-webkit-scrollbar{display:none;}
+.fpill{flex-shrink:0;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;font-family:'DM Sans',sans-serif;}
+.fpill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+/* MODALS */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:flex-end;justify-content:center;}
+.moverlay.open{display:flex;}
+.msheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:93vh;overflow-y:auto;padding-bottom:32px;}
+.mhandle{width:36px;height:4px;background:var(--border2);border-radius:99px;margin:12px auto 16px;}
+.mhdr{padding:4px 18px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.mhdr h2{font-size:18px;font-weight:600;}
+.mclose{background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.mbody{padding:18px;}
+/* FORMS */
+.fg{margin-bottom:16px;}
+.flabel{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.finput,.fsel,.ftarea{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--rs);padding:11px 13px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+.finput:focus,.fsel:focus,.ftarea:focus{border-color:var(--accent);}
+.fsel option{background:var(--bg2);}
+.ftarea{resize:vertical;min-height:80px;line-height:1.5;}
+/* TABS */
+.tbar{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tbar::-webkit-scrollbar{display:none;}
+.tbtn{flex-shrink:0;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .15s;white-space:nowrap;}
+.tbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
+/* CALL CARDS */
+.kccard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.kdate{font-size:12px;color:var(--text3);}
+.knote{font-size:14px;line-height:1.55;color:var(--text);margin-top:4px;}
+/* VOICE */
+#vbtn{width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+#vbtn.rec{background:var(--red);animation:vpulse 1s infinite;}
+@keyframes vpulse{0%,100%{box-shadow:0 0 0 0 rgba(232,64,64,.4);}50%{box-shadow:0 0 0 10px rgba(232,64,64,0);}}
+.note-row{display:flex;gap:10px;align-items:flex-end;}
+.note-row .ftarea{flex:1;}
+/* UPLOAD ZONE */
+.uzone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px;text-align:center;color:var(--text3);font-size:14px;cursor:pointer;transition:border-color .15s;}
+.uzone:hover,.uzone:active{border-color:var(--accent);color:var(--text2);}
+/* MEDIA GALLERY */
+.cat-section{margin-bottom:20px;}
+.cat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cat-label{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;}
+.cat-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.pthumb{aspect-ratio:1;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative;}
+.pthumb img{width:100%;height:100%;object-fit:cover;}
+.pthumb .pdel{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);border:none;color:#fff;width:22px;height:22px;border-radius:50%;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.pthumb:hover .pdel,.pthumb:active .pdel{display:flex;}
+.doc-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.doc-icon{width:36px;height:36px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.doc-info{flex:1;min-width:0;}
+.doc-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-meta{font-size:11px;color:var(--text3);}
+/* ADD MEDIA BUTTONS */
+.media-add-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+/* CONTACTS */
+.ct-row{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);}
+.ct-av{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);flex-shrink:0;}
+.ct-info{flex:1;min-width:0;}
+.ct-name{font-size:14px;font-weight:500;}
+.ct-role{font-size:12px;color:var(--text3);}
+.ct-det{font-size:12px;color:var(--text2);}
+/* DETAIL PAGE */
+#cdetail{display:none;position:fixed;inset:0;background:var(--bg);z-index:150;overflow-y:auto;padding-bottom:100px;}
+.dhdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
+.backbtn{background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:4px;padding:0;}
+.chero{padding:20px 18px 16px;}
+.chero-name{font-size:20px;font-weight:600;letter-spacing:-.5px;}
+.chero-group{font-size:14px;color:var(--text2);margin-top:2px;}
+.stitle{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:16px 18px 8px;}
+.sbody{padding:0 18px;}
+/* LIGHTBOX */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:500;align-items:center;justify-content:center;flex-direction:column;}
+#lightbox.open{display:flex;}
+#lb-img{max-width:100%;max-height:85vh;border-radius:8px;object-fit:contain;}
+#lb-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+/* STATS */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px 18px;}
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.slabel{font-size:12px;color:var(--text3);margin-bottom:6px;}
+.sval{font-size:28px;font-weight:600;letter-spacing:-1px;}
+/* SEARCH */
+#srch-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;padding:16px;flex-direction:column;}
+#srch-overlay.open{display:flex;}
+.srch-row{display:flex;gap:10px;margin-bottom:14px;}
+#srch-input{flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;}
+#srch-input:focus{border-color:var(--accent);}
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:99px;padding:10px 20px;font-size:14px;color:var(--text);z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;}
+/* EMPTY */
+.empty{text-align:center;padding:32px 18px;color:var(--text3);font-size:14px;}
+/* DIVIDER */
+.dvdr{height:1px;background:var(--border);margin:0 18px;}
+/* PROGRESS */
+.upload-progress{height:3px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;}
+.upload-progress-bar{height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .3s;}
+/* ATTACHMENT CHIPS in calls */
+.achip{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:5px 10px;font-size:12px;color:var(--text2);cursor:pointer;margin:3px 3px 0 0;}
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<div id="hdr">
+  <div class="logo">Field<span>Sales</span> NZ</div>
+  <div id="hdr-actions">
+    <div id="sync-dot" title="Sync status"></div>
+    <button class="icon-btn" onclick="openSearch()" title="Search">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════ MAIN ═══════ -->
+<div id="main">
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="view active">
+    <div class="phdr"><h1>Dashboard</h1><span id="today-date" style="font-size:13px;color:var(--text3)"></span></div>
+    <div class="sgrid">
+      <div class="scard"><div class="slabel">Customers</div><div class="sval" id="st-total">—</div></div>
+      <div class="scard"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div></div>
+      <div class="scard"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div></div>
+      <div class="scard"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div></div>
+    </div>
+    <div class="stitle">Recent Calls</div>
+    <div id="recent-calls" class="sbody"></div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div id="view-customers" class="view">
+    <div class="phdr">
+      <h1>Customers</h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s btn-sm" onclick="document.getElementById('bulk-file').click()">Import</button>
+        <button class="btn btn-p btn-sm" onclick="openAddCustomer()">+ Add</button>
+      </div>
+    </div>
+    <input type="file" id="bulk-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkImport(event)">
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
+    <div class="frow" id="status-filters" data-filtertype="status">
+      <button class="fpill active" data-val="all">All</button>
+      <button class="fpill" data-val="ok">All OK</button>
+      <button class="fpill" data-val="risk">At Risk</button>
+      <button class="fpill" data-val="elsewhere">Buys Elsewhere</button>
+      <button class="fpill" data-val="monitor">Monitor</button>
+      <button class="fpill" data-val="inactive">Inactive</button>
+    </div>
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
+    <div class="frow" id="group-filters" data-filtertype="group"></div>
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Region</span></div>
+    <div class="frow" id="region-filters" data-filtertype="region"></div>
+
+    <div id="filter-summary" style="display:none;padding:2px 18px 10px;align-items:center;justify-content:space-between">
+      <span id="filter-summary-text" style="font-size:13px;color:var(--text2)"></span>
+      <button id="clear-filters-btn" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">Clear all</button>
+    </div>
+
+    <div class="clist" id="customer-list"></div>
+  </div>
+
+  <!-- ALL CALLS -->
+  <div id="view-calls" class="view">
+    <div class="phdr"><h1>Call Log</h1></div>
+    <div id="all-calls-list" style="padding:0 18px"></div>
+  </div>
+
+</div>
+
+<!-- ═══════ BOTTOM NAV ═══════ -->
+<nav id="bnav">
+  <button class="ntab active" onclick="switchView('dashboard',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </button>
+  <button class="ntab" onclick="switchView('customers',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Customers
+  </button>
+  <button class="ntab" onclick="switchView('calls',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.56 3.41 2 2 0 0 1 3.53 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.29 6.29l.87-.87a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    Calls
+  </button>
+</nav>
+
+<!-- ═══════ SEARCH ═══════ -->
+<div id="srch-overlay">
+  <div class="srch-row">
+    <input type="text" id="srch-input" placeholder="Search customers…" oninput="doSearch(this.value)">
+    <button class="btn btn-s" onclick="closeSearch()">Cancel</button>
+  </div>
+  <div id="srch-results" style="overflow-y:auto;flex:1"></div>
+</div>
+
+<!-- ═══════ CUSTOMER DETAIL ═══════ -->
+<div id="cdetail">
+  <div class="dhdr">
+    <button class="backbtn" onclick="closeDetail()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div style="flex:1"></div>
+    <button class="btn btn-p btn-sm" onclick="openNewCall(currentCustId)">+ Log Call</button>
+  </div>
+  <div id="detail-content"></div>
+</div>
+
+<!-- ═══════ LIGHTBOX ═══════ -->
+<div id="lightbox">
+  <button id="lb-close" onclick="closeLB()">×</button>
+  <img id="lb-img" src="" alt="Preview">
+</div>
+
+<!-- ═══════ MODAL: CUSTOMER ═══════ -->
+<div class="moverlay" id="m-customer">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2 id="m-cust-title">Add Customer</h2><button class="mclose" onclick="closeModal('m-customer')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="ec-id">
+      <div class="fg"><label class="flabel">Store / Branch Name *</label><input type="text" id="ec-name" class="finput" placeholder="e.g. Mitre 10 Albany"></div>
+      <div class="fg"><label class="flabel">Head Account / Group</label><input type="text" id="ec-group" class="finput" placeholder="e.g. Mitre 10 Head Office"></div>
+      <div class="fg"><label class="flabel">Region</label><input type="text" id="ec-region" class="finput" value="AUCKLAND, NEW ZEALAND"></div>
+      <div class="fg"><label class="flabel">Status</label>
+        <select id="ec-status" class="fsel">
+          <option value="ok">✓ All OK</option><option value="risk">⚠ At Risk</option>
+          <option value="elsewhere">✗ Buys Elsewhere</option><option value="monitor">◎ Monitor</option><option value="inactive">– Inactive</option>
+        </select>
+      </div>
+      <div class="fg"><label class="flabel">Address</label><input type="text" id="ec-address" class="finput" placeholder="Street address"></div>
+      <div class="fg"><label class="flabel">Phone</label><input type="tel" id="ec-phone" class="finput" placeholder="09 …"></div>
+      <div class="fg"><label class="flabel">Email</label><input type="email" id="ec-email" class="finput" placeholder="store@example.co.nz"></div>
+      <div class="fg"><label class="flabel">Notes</label><textarea id="ec-notes" class="ftarea" placeholder="General notes…"></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-customer')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" onclick="saveCustomer()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: LOG CALL ═══════ -->
+<div class="moverlay" id="m-call">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2>Log Sales Call</h2><button class="mclose" onclick="closeModal('m-call')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="kc-custid">
+      <div class="fg"><label class="flabel">Customer</label><div id="kc-custname" style="font-size:15px;font-weight:500;padding:4px 0;color:var(--text2)"></div></div>
+      <div class="fg"><label class="flabel">Call Date *</label><input type="date" id="kc-date" class="finput"></div>
+      <div class="fg">
+        <label class="flabel">Notes <span style="color:var(--text3);font-size:11px;font-weight:400">— tap mic for voice</span></label>
+        <div class="note-row">
+          <textarea id="kc-notes" class="ftarea" rows="4" placeholder="What was discussed, outcomes, follow-ups…"></textarea>
+          <button id="vbtn" onclick="toggleVoice()" title="Voice to text">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div id="vstatus" style="font-size:12px;color:var(--red);margin-top:6px;display:none">● Recording… tap mic to stop</div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Photos</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-s btn-sm" style="flex:1" onclick="document.getElementById('kc-cam').click()">📷 Camera</button>
+          <button class="btn btn-s btn-sm" style="flex:1" onclick="document.getElementById('kc-photos').click()">🖼 Gallery</button>
+        </div>
+        <input type="file" id="kc-cam" accept="image/*" capture="environment" multiple style="display:none" onchange="handleCallPhotos(event)">
+        <input type="file" id="kc-photos" accept="image/*" multiple style="display:none" onchange="handleCallPhotos(event)">
+        <div id="kc-photo-previews" class="photo-grid"></div>
+        <div id="kc-photo-progress" class="upload-progress" style="display:none"><div class="upload-progress-bar" id="kc-pbar"></div></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Documents</label>
+        <div class="uzone" style="padding:14px" onclick="document.getElementById('kc-docs').click()">📎 Tap to attach files</div>
+        <input type="file" id="kc-docs" multiple style="display:none" onchange="handleCallDocs(event)">
+        <div id="kc-doc-list" style="margin-top:8px"></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Update Status</label>
+        <select id="kc-status" class="fsel">
+          <option value="">— no change —</option>
+          <option value="ok">✓ All OK</option><option value="risk">⚠ At Risk</option>
+          <option value="elsewhere">✗ Buys Elsewhere</option><option value="monitor">◎ Monitor</option><option value="inactive">– Inactive</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-call')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" id="save-call-btn" onclick="saveCall()">Save Call</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: ADD MEDIA TO CUSTOMER ═══════ -->
+<div class="moverlay" id="m-media">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2>Add to Customer Profile</h2><button class="mclose" onclick="closeModal('m-media')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="med-custid">
+      <div class="fg">
+        <label class="flabel">Category</label>
+        <select id="med-cat" class="fsel">
+          <option value="Photo">📷 Photo</option>
+          <option value="Planogram">📐 Planogram</option>
+          <option value="Price List">💲 Price List</option>
+          <option value="Contract">📄 Contract</option>
+          <option value="Other">📎 Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="flabel">Caption (optional)</label>
+        <input type="text" id="med-caption" class="finput" placeholder="e.g. Front aisle display, Sept 2025">
+      </div>
+      <div class="fg">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button class="btn btn-s btn-sm" style="flex:1" onclick="document.getElementById('med-cam').click()">📷 Camera</button>
+          <button class="btn btn-s btn-sm" style="flex:1" onclick="document.getElementById('med-file').click()">📁 File / Gallery</button>
+        </div>
+        <input type="file" id="med-cam" accept="image/*" capture="environment" style="display:none" onchange="previewMediaFile(event)">
+        <input type="file" id="med-file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="previewMediaFile(event)">
+        <div id="med-preview" style="margin-top:8px"></div>
+        <div id="med-progress" class="upload-progress" style="display:none"><div class="upload-progress-bar" id="med-pbar"></div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-media')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" id="med-save-btn" onclick="saveMedia()">Upload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: CONTACT ═══════ -->
+<div class="moverlay" id="m-contact">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2 id="m-ct-title">Add Contact</h2><button class="mclose" onclick="closeModal('m-contact')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="ct-custid"><input type="hidden" id="ct-id">
+      <div class="fg"><label class="flabel">Full Name *</label><input type="text" id="ct-name" class="finput" placeholder="Jane Smith"></div>
+      <div class="fg"><label class="flabel">Role / Title</label><input type="text" id="ct-role" class="finput" placeholder="Store Manager"></div>
+      <div class="fg"><label class="flabel">Phone</label><input type="tel" id="ct-phone" class="finput" placeholder="021 …"></div>
+      <div class="fg"><label class="flabel">Email</label><input type="email" id="ct-email" class="finput" placeholder="jane@store.co.nz"></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-contact')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" onclick="saveContact()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     SCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────
+// CONFIG — replace with your Supabase credentials
+// ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://zgskqkuirvtlcnjgmlei.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnc2txa3VpcnZ0bGNuamdtbGVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MDkzNjEsImV4cCI6MjA5NjA4NTM2MX0.72jU2LVos_MMb4yAKBGCfMlzfXzkNzahqce1DwBpxWU';
+const STORAGE_BUCKET = 'fieldsales-media';
+
+// ─────────────────────────────────────────────
+// SUPABASE CLIENT (lightweight, no npm needed)
+// ─────────────────────────────────────────────
+const sb = {
+  headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY },
+  url: SUPABASE_URL,
+
+  async query(table, params='') {
+    const r = await fetch(`${this.url}/rest/v1/${table}${params}`, { headers: this.headers });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async insert(table, body) {
+    const r = await fetch(`${this.url}/rest/v1/${table}`, {
+      method:'POST', headers:{...this.headers,'Prefer':'return=representation'}, body:JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async update(table, id, body) {
+    const r = await fetch(`${this.url}/rest/v1/${table}?id=eq.${id}`, {
+      method:'PATCH', headers:{...this.headers,'Prefer':'return=representation'}, body:JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  },
+  async delete(table, id) {
+    const r = await fetch(`${this.url}/rest/v1/${table}?id=eq.${id}`, {
+      method:'DELETE', headers: this.headers
+    });
+    if (!r.ok) throw new Error(await r.text());
+  },
+  async uploadFile(path, file, contentType) {
+    const r = await fetch(`${this.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+      method:'POST',
+      headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':contentType, 'x-upsert':'true' },
+      body: file
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return `${this.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+  },
+  async deleteFile(path) {
+    const r = await fetch(`${this.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+      method:'DELETE', headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY }
+    });
+    if (!r.ok) throw new Error(await r.text());
+  }
+};
+
+// Detect if Supabase is configured
+const SB_READY = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
+
+// ─────────────────────────────────────────────
+// LOCAL CACHE (fallback when Supabase not set up)
+// ─────────────────────────────────────────────
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } },
+  set(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
+};
+let customers = LS.get('fsm_customers');
+let calls     = LS.get('fsm_calls');
+let contacts  = LS.get('fsm_contacts');
+let custDocs  = LS.get('fsm_custdocs');
+let callAtts  = LS.get('fsm_callatts');
+
+// ─────────────────────────────────────────────
+// SEED DATA (runs once if no customers)
+// ─────────────────────────────────────────────
+const SEED=[["COCKY'S WAIUKU LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["MARTEN BAKKER TIMBERS LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["PENROSE PANEL & ROOFING LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["STICKS BUILDING SUPPLIES LTD (BUILDLINK)","BUILDLINK HEAD OFFICE"],["TRADIE REPUBLIC LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["WOODMART LTD (BUILDLINK)","BUILDLINK HEAD OFFICE"],["BUNNINGS AVONDALE TRADE CENTRE","BUNNINGS HEAD OFFICE"],["BUNNINGS BOTANY","BUNNINGS HEAD OFFICE"],["BUNNINGS EAST TAMAKI (TRADE)","BUNNINGS HEAD OFFICE"],["BUNNINGS GLENFIELD","BUNNINGS HEAD OFFICE"],["BUNNINGS GREY LYNN","BUNNINGS HEAD OFFICE"],["BUNNINGS HENDERSON","BUNNINGS HEAD OFFICE"],["BUNNINGS MANUKAU","BUNNINGS HEAD OFFICE"],["BUNNINGS MT ROSKILL","BUNNINGS HEAD OFFICE"],["BUNNINGS MT WELLINGTON","BUNNINGS HEAD OFFICE"],["BUNNINGS NEW LYNN","BUNNINGS HEAD OFFICE"],["BUNNINGS NORTH SHORE","BUNNINGS HEAD OFFICE"],["BUNNINGS PAPAKURA","BUNNINGS HEAD OFFICE"],["BUNNINGS PUKEKOHE","BUNNINGS HEAD OFFICE"],["BUNNINGS TRADE SILVERDALE","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE SILVERDALE","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE TAKANINI","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE WESTGATE","BUNNINGS HEAD OFFICE"],["CARTERS ALBANY","CARTERS NATIONAL OFFICE"],["CARTERS AUCKLAND MANUFACTURING","CARTERS NATIONAL OFFICE"],["CARTERS DRURY","CARTERS NATIONAL OFFICE"],["CARTERS EAST TAMAKI","CARTERS NATIONAL OFFICE"],["CARTERS GLENFIELD","CARTERS NATIONAL OFFICE"],["CARTERS HENDERSON","CARTERS NATIONAL OFFICE"],["CARTERS NORTH SHORE","CARTERS NATIONAL OFFICE"],["CARTERS ONEHUNGA","CARTERS NATIONAL OFFICE"],["CARTERS PANMURE","CARTERS NATIONAL OFFICE"],["CARTERS PAPAKURA","CARTERS NATIONAL OFFICE"],["CARTERS PUKEKOHE","CARTERS NATIONAL OFFICE"],["CARTERS ST LUKES","CARTERS NATIONAL OFFICE"],["CARTERS WHANGAPARAOA","CARTERS NATIONAL OFFICE"],["ALBANY ITM","ITM CO-OPERATIVE LTD"],["DAYLE ITM AVONDALE","ITM CO-OPERATIVE LTD"],["DAYLE ITM EAST TAMAKI","ITM CO-OPERATIVE LTD"],["DYSART ITM GLEN INNES","ITM CO-OPERATIVE LTD"],["DYSART TIMBERS (DRURY) LTD","ITM CO-OPERATIVE LTD"],["HILLSIDE BUILDING SUPPLIES LTD","ITM CO-OPERATIVE LTD"],["HILLSIDE ITM GLENFIELD","ITM CO-OPERATIVE LTD"],["ITM SMITH TIMBER LTD","ITM CO-OPERATIVE LTD"],["ITM TUAKAU BUILDING CENTRE LTD","ITM CO-OPERATIVE LTD"],["MACCLURES ITM","ITM CO-OPERATIVE LTD"],["MADDREN ITM BLDG CENTRE KUMEU","ITM CO-OPERATIVE LTD"],["MADDREN ITM SILVERDALE","ITM CO-OPERATIVE LTD"],["MAHIA ITM","ITM CO-OPERATIVE LTD"],["PAPAKURA ITM","ITM CO-OPERATIVE LTD"],["THREE BROTHERS ITM PANMURE","ITM CO-OPERATIVE LTD"],["TRIBRO BUILDING CENTRE LTD (DRURY)","ITM CO-OPERATIVE LTD"],["WAIUKU ITM","ITM CO-OPERATIVE LTD"],["WECKS ITM FRAME AND TRUSS","ITM CO-OPERATIVE LTD"],["WECKS ITM PATUMAHOE","ITM CO-OPERATIVE LTD"],["WECKS ITM PUKEKOHE","ITM CO-OPERATIVE LTD"],["WESTERN ITM KUMEU","ITM CO-OPERATIVE LTD"],["WESTERN ITM SWANSON","ITM CO-OPERATIVE LTD"],["WESTERN ITM WHENUAPAI","ITM CO-OPERATIVE LTD"],["BEACHLANDS MITRE 10","MITRE 10 HEAD OFFICE"],["DEVONPORT HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GLEN INNES HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GREEN BAY HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GROVE MITRE 10 BROWNS BAY","MITRE 10 HEAD OFFICE"],["GROVE MITRE 10 TAKAPUNA","MITRE 10 HEAD OFFICE"],["HAMMER HARDWARE NEWMARKET","MITRE 10 HEAD OFFICE"],["HAMMER HARDWARE TE ATATU","MITRE 10 HEAD OFFICE"],["HELENSVILLE MITRE 10","MITRE 10 HEAD OFFICE"],["MITRE 10 BIRKENHEAD","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA ALBANY","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA BOTANY","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA GLENFIELD (GROVE)","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA HENDERSON","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA MANUKAU","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA MT WELLINGTON","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA NEW LYNN","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA PUKEKOHE","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA SILVERDALE","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA TAKANINI","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA WESTGATE","MITRE 10 HEAD OFFICE"],["MITRE 10 NEW LYNN","MITRE 10 HEAD OFFICE"],["MITRE 10 ONEHUNGA (GROVE)","MITRE 10 HEAD OFFICE"],["MITRE 10 PAKURANGA","MITRE 10 HEAD OFFICE"],["MITRE 10 PONSONBY","MITRE 10 HEAD OFFICE"],["MITRE 10 PUKEKOHE","MITRE 10 HEAD OFFICE"],["MITRE 10 WAIUKU","MITRE 10 HEAD OFFICE"],["MITRE 10 WESTGATE","MITRE 10 HEAD OFFICE"],["MITRE 10 WHANGAPARAOA","MITRE 10 HEAD OFFICE"],["RAYDEN MITRE 10 MT ROSKILL","MITRE 10 HEAD OFFICE"],["RAYDEN MITRE 10 MT WELLINGTON","MITRE 10 HEAD OFFICE"],["WELLESLEY STREET MITRE 10","MITRE 10 HEAD OFFICE"],["MADDREN TIMBER SILVERDALE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS ALBANY","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS COOK ST","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS MT WELLINGTON","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS NEW LYNN","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PAKURANGA","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PENROSE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PUKEKOHE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS SILVERDALE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS TAKANINI","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WAIHEKE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WAIRAU PARK GLENFIELD","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WESTGATE","PLACEMAKERS HEAD OFFICE"],["TIMBERWORLD LTD (ALBANY)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (BIRKDALE)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (EAST TAMAKI)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (WAIHEKE)","TIMBERWORLD HEAD OFFICE"],
+['BUILDLINK CAMBRIDGE','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUILDLINK TE AROHA','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUILDLINK TE KAUWHATA','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['KIWI TIMBER SUPPLIES LTD (BUILDLINK)','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MATAMATA TIMBER & HARDWARE (BUILDLINK)','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PAEROA TIMBER AND HARDWARE LTD (BUILDLINK)','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PEPPERS BUILDING SUPPLIES (BUILDLINK)','BUILDLINK HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['TROWEL TRADES SUPA CENTRE (TAURANGA) LTD -  BUILDLINK','BUILDLINK HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['WAREHOUSE BUILDING SUPPLIES RAGLAN (BUILDLINK)','BUILDLINK HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS CAMBRIDGE','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS HAMILTON - TE RAPA','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS MT MAUNGANUI','BUNNINGS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['BUNNINGS PAEROA','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS ROTORUA','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS TAUPO','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS TAURANGA SFS','BUNNINGS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['BUNNINGS TAURIKO TRADE CENTRE','BUNNINGS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['BUNNINGS TE AROHA','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS TE AWAMUTU','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS TE PUKE','BUNNINGS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['BUNNINGS TOKOROA','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS WAREHOUSE SOUTH HAMILTON','BUNNINGS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['BUNNINGS WHAKATANE','BUNNINGS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['CARTERS CAMBRIDGE','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS HAMILTON TE RAPA','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS HAMILTON VICKERY ST','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS MT MAUNGANUI','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS ROTORUA','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS TAUPO','CARTERS NATIONAL OFFICE - SUPPLIER #14235','WAIKATO, NEW ZEALAND'],
+['CARTERS TAURANGA','CARTERS NATIONAL OFFICE - SUPPLIER #14235','BAY OF PLENTY, NEW ZEALAND'],
+['ACORN ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['CAMBRIDGE ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['CAMBRIDGE ITM BUILDING CENTRE','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['ITM WAIKATO BUILDING','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['KATI KATI BUILDING SUPP (DO NOT USE A/C','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['KATIKATI BUILDING SUPPLIES LTD','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['MATAMATA POST & RAILS ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['OPOTIKI ITM','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['OREGON ITM MT MAUNGANUI','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['OREGON ITM OMOKOROA','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['OREGON ITM PAPAMOA - CLOSED','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['OTOROHANGA ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['ROTOMA ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['ROTORUA ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['TAUPO ITM - TAUPO BUILDING SUPPLIES LTD','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['TAURANGA ITM BLDG & FENCING','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['TE PUKE ITM','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['THOMSONS ITM HAMILTON','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['THOMSONS ITM WHATAWHATA','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['THREE BROTHERS ITM HAMILTON','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['TIMMOS ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['TOKOROA ITM','ITM CO-OPERATIVE LTD','WAIKATO, NEW ZEALAND'],
+['WHAKATANE TIMBER & HARDWARE ITM','ITM CO-OPERATIVE LTD','BAY OF PLENTY, NEW ZEALAND'],
+['HAMMER HARDWARE DINSDALE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['KATIKATI HAMMER HARDWARE','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['LADBROOKS MITRE 10 TAUPO','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MATAMATA MITRE 10','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 CAMBRIDGE (CLOSING SOON)','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 HAUTAPU TRADE DISTRIBUTION CENTRE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA CAMBRIDGE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA ROTORUA (JUTED)','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA RUAKURA (HAMILTON EAST)','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA TAUPO','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA TAURANGA','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['MITRE 10 MEGA TE AWAMUTU','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 MEGA TE RAPA (HAMILTON)','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 OTOROHANGA (KIWITOWN)','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 PUTARURU','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 ROTORUA','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['MITRE 10 TAURANGA DISTRIBUTION CENTRE','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['MITRE 10 TE KUITI','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MITRE 10 TOKOROA','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['MORRINSVILLE MITRE 10','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['NGATEA HAMMER HARDWARE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['OPOTIKI MITRE 10','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['OTOROHANGA TIMBER (OTC)-LEFT M10 GROUP','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PAEROA HAMMER HARDWARE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PAPAMOA MITRE 10','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['PUTARURU HAMMER HARDWARE','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['RICKITS MITRE 10 TE AWAMUTU * CLOSED*','MITRE 10 HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['TE PUKE MITRE 10 (NEW STORE)','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['TE PUKE MITRE 10 SOLUTIONS','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['WHAKATANE MITRE 10','MITRE 10 HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['PLACEMAKERS HAMILTON - TE RAPA DEPOT','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS HAMILTON (CLARENCE ST DEPOT','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS HAMILTON (ELLIS STREET)','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS HUNTLY','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS MORRINSVILLE','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS MT MAUNGANUI (MACDONALD ST)','PLACEMAKERS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['PLACEMAKERS MT MAUNGANUI -TAURANGA DEPOT','PLACEMAKERS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND'],
+['PLACEMAKERS ROTOMA TIMBER AND HARDWARE','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS ROTORUA','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS TAUPO','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS TE KUITI','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
+['PLACEMAKERS WHAKATANE','PLACEMAKERS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND']];
+
+const SEED_VERSION = 2;  // bump to force re-seed on all devices
+if (customers.length === 0 || (LS.get("fsm_seed_ver")||0) < SEED_VERSION) {
+  LS.set("fsm_seed_ver", SEED_VERSION);
+  customers = SEED.map((s,i) => ({ id:'c'+i, name:s[0], group:s[1], region:(s[2]||'AUCKLAND, NEW ZEALAND'), status:'ok', address:'', phone:'', email:'', notes:'' }));
+  LS.set('fsm_customers', customers);
+}
+
+// ─────────────────────────────────────────────
+// IMAGE COMPRESSION  (max 200KB, 1200px wide)
+// ─────────────────────────────────────────────
+function compressImage(file, maxKB=200, maxPx=1200) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let {width:w, height:h} = img;
+      if (w > maxPx || h > maxPx) {
+        const r = Math.min(maxPx/w, maxPx/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      // binary search quality
+      let lo=0.3, hi=0.92, quality=0.7, blob;
+      const tryQ = q => new Promise(res => canvas.toBlob(res, 'image/jpeg', q));
+      (async () => {
+        for (let i=0;i<6;i++) {
+          const mid=(lo+hi)/2;
+          blob = await tryQ(mid);
+          if (blob.size/1024 > maxKB) hi=mid; else lo=mid;
+          quality=mid;
+        }
+        blob = await tryQ(lo);
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/,'.jpg'), {type:'image/jpeg'}));
+      })();
+    };
+    img.src = url;
+  });
+}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let filterStatus='all', filterGroup='all', filterRegion='all', currentCustId=null;
+let pendingCallPhotos=[], pendingCallDocs=[];
+let pendingMediaFile=null;
+let recognition=null, isRec=false;
+
+// ─────────────────────────────────────────────
+// SYNC INDICATOR
+// ─────────────────────────────────────────────
+function setSyncDot(state) {
+  const d=document.getElementById('sync-dot');
+  d.className=''; d.classList.add(state);
+}
+
+// ─────────────────────────────────────────────
+// VIEWS
+// ─────────────────────────────────────────────
+function switchView(name,btn) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='customers') { buildFilterPills(); renderCustomers(); }
+  // listeners are always live (attached once at init)
+  if (name==='dashboard') renderDashboard();
+  if (name==='calls') renderAllCalls();
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+function renderDashboard() {
+  const d=new Date();
+  document.getElementById('today-date').textContent=d.toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('st-total').textContent=customers.length;
+  const ago=new Date(d-7*86400000);
+  document.getElementById('st-calls').textContent=calls.filter(c=>new Date(c.call_date||c.date)>=ago).length;
+  document.getElementById('st-risk').textContent=customers.filter(c=>c.status==='risk').length;
+  document.getElementById('st-el').textContent=customers.filter(c=>c.status==='elsewhere').length;
+  const rec=[...calls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date)).slice(0,5);
+  const el=document.getElementById('recent-calls');
+  if(!rec.length){el.innerHTML='<div class="empty">No calls logged yet</div>';return;}
+  el.innerHTML=rec.map(c=>{
+    const cust=customers.find(x=>x.id===c.customer_id||x.id===c.customerId);
+    return`<div class="kccard" onclick="openCustomer('${c.customer_id||c.customerId}')" style="cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:500">${cust?cust.name:'—'}</span>
+        <span class="kdate">${fmtDate(c.call_date||c.date)}</span>
+      </div>
+      <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,100)+(c.notes.length>100?'…':''):'<em>No notes</em>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// CUSTOMERS LIST
+// ─────────────────────────────────────────────
+function sbadge(s){
+  const m={ok:['s-ok','✓ All OK'],risk:['s-risk','⚠ At Risk'],elsewhere:['s-elsewhere','✗ Buys Elsewhere'],monitor:['s-monitor','◎ Monitor'],inactive:['s-inactive','– Inactive']};
+  const [c,l]=m[s]||m.ok;
+  return`<span class="sbadge ${c}">${l}</span>`;
+}
+// ─── FILTER SYSTEM ───────────────────────────────────────────────────────────
+function shortLabel(g){ return (g||'').replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
+function shortRegion(r){ return (r||'').replace(/, NEW ZEALAND$/i,'').replace(/, NZ$/i,''); }
+
+function buildFilterPills(){
+  const groups=[...new Set(customers.map(c=>(c.group||'').trim()).filter(Boolean))].sort();
+  const regions=[...new Set(customers.map(c=>(c.region||'').trim()).filter(Boolean))].sort();
+
+  function makePills(containerId, items, currentVal){
+    const el=document.getElementById(containerId);
+    el.innerHTML='';
+    [{val:'all',label:'All'},...items].forEach(item=>{
+      const b=document.createElement('button');
+      b.className='fpill';
+      if(item.val===currentVal) b.classList.add('active');
+      b.textContent=item.label;
+      b.dataset.val=item.val;
+      el.appendChild(b);
+    });
+  }
+  makePills('group-filters',  groups.map(g=>({val:g, label:shortLabel(g)})),  filterGroup);
+  makePills('region-filters', regions.map(r=>({val:r, label:shortRegion(r)})), filterRegion);
+}
+
+function initFilterListeners(){
+  document.querySelectorAll('#status-filters, #group-filters, #region-filters').forEach(row=>{
+    row.addEventListener('click', function(e){
+      const btn = e.target.closest('button.fpill');
+      if(!btn) return;
+      const val  = btn.dataset.val;
+      const type = this.dataset.filtertype;
+      this.querySelectorAll('button.fpill').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      if(type==='status') filterStatus=val;
+      if(type==='group')  filterGroup=val;
+      if(type==='region') filterRegion=val;
+      renderCustomers();
+    });
+  });
+  const cb=document.getElementById('clear-filters-btn');
+  if(cb) cb.addEventListener('click', clearAllFilters);
+}
+
+function clearAllFilters(){
+  filterStatus='all'; filterGroup='all'; filterRegion='all';
+  ['status-filters','group-filters','region-filters'].forEach(id=>{
+    document.querySelectorAll('#'+id+' button.fpill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.val==='all');
+    });
+  });
+  renderCustomers();
+}
+function renderCustomers(){
+  let list=[...customers];
+  if(filterStatus!=='all') list=list.filter(c=>c.status===filterStatus);
+  if(filterGroup!=='all')  list=list.filter(c=>(c.group||'').toUpperCase()===filterGroup.toUpperCase());
+  if(filterRegion!=='all') list=list.filter(c=>(c.region||'').toUpperCase()===filterRegion.toUpperCase());
+
+  // update summary bar
+  const activeFilters=[];
+  if(filterStatus!=='all') activeFilters.push({ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[filterStatus]);
+  if(filterGroup!=='all')  activeFilters.push(shortLabel(filterGroup));
+  if(filterRegion!=='all') activeFilters.push(shortRegion(filterRegion));
+  const sumEl=document.getElementById('filter-summary');
+  if(activeFilters.length){
+    sumEl.style.display='flex';
+    document.getElementById('filter-summary-text').textContent=`${list.length} result${list.length!==1?'s':''} · ${activeFilters.join(' · ')}`;
+  } else {
+    sumEl.style.display='none';
+  }
+
+  list.sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name));
+  const el=document.getElementById('customer-list');
+  if(!list.length){el.innerHTML='<div class="empty">No customers match these filters</div>';return;}
+  let html='',lastG='';
+  list.forEach(c=>{
+    const cCalls=calls.filter(x=>(x.customer_id||x.customerId)===c.id);
+    const last=cCalls.length?[...cCalls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date))[0]:null;
+    const cContacts=contacts.filter(x=>(x.customer_id||x.customerId)===c.id);
+    const cDocs=custDocs.filter(x=>(x.customer_id||x.customerId)===c.id);
+    if(c.group!==lastG){html+=`<div class="glabel">${c.group||'Other'}</div>`;lastG=c.group;}
+    html+=`<div class="ccard" onclick="openCustomer('${c.id}')">
+      <div class="cc-top"><div><div class="cc-name">${c.name}</div></div>${sbadge(c.status)}</div>
+      <div class="cc-meta">
+        <span>📞 ${cCalls.length} call${cCalls.length!==1?'s':''}</span>
+        ${last?`<span>Last: ${fmtDate(last.call_date||last.date)}</span>`:''}
+        ${cContacts.length?`<span>👤 ${cContacts.length}</span>`:''}
+        ${cDocs.length?`<span>📁 ${cDocs.length} file${cDocs.length!==1?'s':''}</span>`:''}
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────
+// CUSTOMER DETAIL
+// ─────────────────────────────────────────────
+function openCustomer(id){
+  currentCustId=id;
+  const c=customers.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('detail-content').innerHTML=`
+    <div class="chero">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div><div class="chero-name">${c.name}</div><div class="chero-group">${c.group}</div></div>
+        <button class="btn btn-s btn-sm" onclick="openEditCustomer('${id}')">Edit</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${sbadge(c.status)}<span style="font-size:12px;color:var(--text3)">${c.region}</span></div>
+      ${c.address||c.phone||c.email?`<div style="margin-top:12px;font-size:13px;color:var(--text2);line-height:1.8">${c.address?c.address+'<br>':''}${c.phone?'📞 '+c.phone+'<br>':''}${c.email?'✉ '+c.email:''}</div>`:''}
+      ${c.notes?`<div style="margin-top:10px;font-size:14px;color:var(--text2);line-height:1.6;padding:12px;background:var(--bg3);border-radius:var(--rs)">${c.notes}</div>`:''}
+    </div>
+    <div class="dvdr"></div>
+    <div style="padding:0 18px">
+      <div class="tbar" style="margin:0;padding:0">
+        <button class="tbtn active" id="dt-calls" onclick="showTab('calls','${id}')">Calls</button>
+        <button class="tbtn" id="dt-media" onclick="showTab('media','${id}')">Files & Photos</button>
+        <button class="tbtn" id="dt-contacts" onclick="showTab('contacts','${id}')">Contacts</button>
+      </div>
+    </div>
+    <div id="dt-content" style="padding:0 18px;padding-top:4px"></div>
+  `;
+  showTab('calls',id);
+  document.getElementById('cdetail').style.display='block';
+}
+function closeDetail(){ document.getElementById('cdetail').style.display='none'; currentCustId=null; }
+
+function showTab(tab,id){
+  ['calls','media','contacts'].forEach(t=>{
+    const b=document.getElementById('dt-'+t);
+    if(b) b.classList.toggle('active',t===tab);
+  });
+  const c=customers.find(x=>x.id===id);
+  const el=document.getElementById('dt-content');
+  if(tab==='calls'){
+    const cCalls=[...calls.filter(x=>(x.customer_id||x.customerId)===id)].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date));
+    if(!cCalls.length){el.innerHTML=`<div class="empty">No calls yet<br><button class="btn btn-p" style="margin:12px auto 0;display:flex" onclick="openNewCall('${id}')">+ Log First Call</button></div>`;return;}
+    el.innerHTML=cCalls.map(call=>{
+      const atts=(callAtts.filter(a=>(a.call_id||a.callId)===call.id)||[]);
+      return`<div class="kccard" style="margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span class="kdate">${fmtDate(call.call_date||call.date)}</span>
+          <button onclick="deleteCall('${call.id}','${id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">Delete</button>
+        </div>
+        <div class="knote">${call.notes||'<em style="color:var(--text3)">No notes</em>'}</div>
+        ${atts.length?`<div style="margin-top:8px;display:flex;flex-wrap:wrap">${atts.map(a=>a.file_type&&a.file_type.startsWith('image')?`<img src="${a.url||a.storage_path}" onclick="openLB('${a.url||a.storage_path}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;margin:3px;cursor:pointer">`:`<div class="achip">📎 ${a.file_name||a.name}</div>`).join('')}</div>`:''}
+      </div>`;
+    }).join('');
+  } else if(tab==='media'){
+    renderMediaTab(id, el);
+  } else {
+    const cContacts=contacts.filter(x=>(x.customer_id||x.customerId)===id);
+    let html=cContacts.map((ct,i)=>{
+      const init=ct.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+      return`<div class="ct-row">
+        <div class="ct-av">${init}</div>
+        <div class="ct-info"><div class="ct-name">${ct.name}</div><div class="ct-role">${ct.role||''}</div><div class="ct-det">${ct.phone?'📞 '+ct.phone+' ':''}${ct.email?'✉ '+ct.email:''}</div></div>
+        <button onclick="openEditContact('${id}','${ct.id||i}')" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;flex-shrink:0">Edit</button>
+      </div>`;
+    }).join('');
+    el.innerHTML=html+`<div style="margin-top:14px"><button class="btn btn-p" onclick="openAddContact('${id}')">+ Add Contact</button></div>`;
+  }
+}
+
+// ─────────────────────────────────────────────
+// MEDIA TAB
+// ─────────────────────────────────────────────
+const CATS=[
+  {id:'Photo',    icon:'📷', label:'Photos'},
+  {id:'Planogram',icon:'📐', label:'Planograms'},
+  {id:'Price List',icon:'💲',label:'Price Lists'},
+  {id:'Contract', icon:'📄', label:'Contracts'},
+  {id:'Other',    icon:'📎', label:'Other Files'}
+];
+function renderMediaTab(custId, el){
+  const docs=custDocs.filter(d=>(d.customer_id||d.customerId)===custId);
+  let html=`<div style="margin:14px 0 16px"><button class="btn btn-p btn-sm" onclick="openAddMedia('${custId}')">+ Add Photo / File</button></div>`;
+  let anyContent=false;
+  CATS.forEach(cat=>{
+    const catDocs=docs.filter(d=>d.category===cat.id);
+    if(!catDocs.length) return;
+    anyContent=true;
+    const isPhoto=cat.id==='Photo';
+    html+=`<div class="cat-section">
+      <div class="cat-header"><span class="cat-label">${cat.icon} ${cat.label} <span style="color:var(--text3);font-weight:400">(${catDocs.length})</span></span></div>`;
+    if(isPhoto){
+      html+=`<div class="photo-grid">${catDocs.map(d=>`
+        <div class="pthumb">
+          <img src="${d.url||d.storage_path}" alt="${d.caption||d.file_name}" onclick="openLB('${d.url||d.storage_path}')">
+          <button class="pdel" onclick="event.stopPropagation();deleteDoc('${d.id}','${custId}')">×</button>
+        </div>`).join('')}</div>`;
+    } else {
+      html+=catDocs.map(d=>`<div class="doc-row">
+        <div class="doc-icon">${cat.icon}</div>
+        <div class="doc-info">
+          <div class="doc-name">${d.file_name}</div>
+          <div class="doc-meta">${d.caption||''} ${d.created_at?'· '+fmtDate(d.created_at.split('T')[0]):'· '+fmtDate(d.date||'')}</div>
+        </div>
+        <a href="${d.url||d.storage_path}" target="_blank" class="btn btn-s btn-sm" style="flex-shrink:0">Open</a>
+        <button onclick="deleteDoc('${d.id}','${custId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;margin-left:4px">×</button>
+      </div>`).join('');
+    }
+    html+=`</div>`;
+  });
+  if(!anyContent){
+    html+=`<div class="empty">No files yet — tap "Add Photo / File" to get started</div>`;
+  }
+  el.innerHTML=html;
+}
+
+// ─────────────────────────────────────────────
+// ADD MEDIA MODAL
+// ─────────────────────────────────────────────
+function openAddMedia(custId){
+  document.getElementById('med-custid').value=custId;
+  document.getElementById('med-cat').value='Photo';
+  document.getElementById('med-caption').value='';
+  document.getElementById('med-preview').innerHTML='';
+  document.getElementById('med-progress').style.display='none';
+  pendingMediaFile=null;
+  openModal('m-media');
+}
+function previewMediaFile(e){
+  const file=e.target.files[0]; if(!file) return;
+  pendingMediaFile=file;
+  const el=document.getElementById('med-preview');
+  if(file.type.startsWith('image/')){
+    const url=URL.createObjectURL(file);
+    el.innerHTML=`<img src="${url}" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--rs);margin-top:8px">
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Original: ${(file.size/1024).toFixed(0)}KB — will compress to ~200KB</div>`;
+  } else {
+    el.innerHTML=`<div class="achip" style="margin-top:8px">📎 ${file.name} (${(file.size/1024).toFixed(0)}KB)</div>`;
+  }
+}
+async function saveMedia(){
+  const rawCustId=document.getElementById('med-custid').value;
+  if(!pendingMediaFile){ showToast('Please select a file'); return; }
+  const custId = await ensureInSupabase(rawCustId);
+  const cat=document.getElementById('med-cat').value;
+  const caption=document.getElementById('med-caption').value.trim();
+  const btn=document.getElementById('med-save-btn');
+  btn.disabled=true; btn.textContent='Uploading…';
+  const prog=document.getElementById('med-progress');
+  const bar=document.getElementById('med-pbar');
+  prog.style.display='block'; bar.style.width='20%';
+  try {
+    let fileToUpload=pendingMediaFile;
+    if(pendingMediaFile.type.startsWith('image/')){
+      fileToUpload=await compressImage(pendingMediaFile);
+    }
+    bar.style.width='60%';
+    let url=null, storagePath=null;
+    if(SB_READY){
+      const slug=cat.toLowerCase().replace(/\s+/g,'-');
+      storagePath=`customers/${custId}/${slug}/${Date.now()}-${fileToUpload.name}`;
+      url=await sb.uploadFile(storagePath, fileToUpload, fileToUpload.type);
+      bar.style.width='80%';
+      const rec={customer_id:custId,category:cat,file_name:fileToUpload.name,file_type:fileToUpload.type,storage_path:storagePath,size_bytes:fileToUpload.size,caption};
+      const [saved]=await sb.insert('customer_documents',rec);
+      custDocs.push({...saved, url});
+    } else {
+      // local fallback — store as data URL
+      url=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(fileToUpload);});
+      const rec={id:'d'+Date.now(), customerId:custId, customer_id:custId, category:cat, file_name:fileToUpload.name, file_type:fileToUpload.type, storage_path:url, url, size_bytes:fileToUpload.size, caption, date:new Date().toISOString().split('T')[0]};
+      custDocs.push(rec);
+      LS.set('fsm_custdocs', custDocs);
+    }
+    bar.style.width='100%';
+    closeModal('m-media');
+    showToast('Uploaded!');
+    if(currentCustId===custId){ openCustomer(custId); setTimeout(()=>showTab('media',custId),50); }
+    setSyncDot('ok');
+  } catch(err){
+    showToast('Upload failed: '+err.message);
+    setSyncDot('err');
+  } finally {
+    btn.disabled=false; btn.textContent='Upload';
+    setTimeout(()=>{prog.style.display='none';bar.style.width='0%';},800);
+  }
+}
+async function deleteDoc(docId, custId){
+  if(!confirm('Delete this file?')) return;
+  const doc=custDocs.find(d=>d.id===docId);
+  try {
+    if(SB_READY && doc && doc.storage_path && !doc.storage_path.startsWith('data:')){
+      await sb.deleteFile(doc.storage_path);
+      await sb.delete('customer_documents', docId);
+    }
+    custDocs=custDocs.filter(d=>d.id!==docId);
+    LS.set('fsm_custdocs', custDocs);
+    showToast('Deleted');
+    if(currentCustId===custId){ openCustomer(custId); setTimeout(()=>showTab('media',custId),50); }
+  } catch(e){ showToast('Delete failed: '+e.message); }
+}
+
+// ─────────────────────────────────────────────
+// CALL MODAL
+// ─────────────────────────────────────────────
+function openNewCall(custId){
+  const c=customers.find(x=>x.id===custId);
+  document.getElementById('kc-custid').value=custId;
+  document.getElementById('kc-custname').textContent=c?c.name:'';
+  document.getElementById('kc-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('kc-notes').value='';
+  document.getElementById('kc-status').value='';
+  document.getElementById('kc-photo-previews').innerHTML='';
+  document.getElementById('kc-doc-list').innerHTML='';
+  document.getElementById('kc-photo-progress').style.display='none';
+  pendingCallPhotos=[]; pendingCallDocs=[];
+  openModal('m-call');
+}
+async function handleCallPhotos(e){
+  const files=Array.from(e.target.files);
+  const prev=document.getElementById('kc-photo-previews');
+  const prog=document.getElementById('kc-photo-progress');
+  const bar=document.getElementById('kc-pbar');
+  prog.style.display='block'; bar.style.width='10%';
+  for(let i=0;i<files.length;i++){
+    const compressed=await compressImage(files[i]);
+    const url=URL.createObjectURL(compressed);
+    pendingCallPhotos.push({file:compressed,previewUrl:url});
+    const div=document.createElement('div'); div.className='pthumb';
+    const img=document.createElement('img'); img.src=url; div.appendChild(img);
+    prev.appendChild(div);
+    bar.style.width=((i+1)/files.length*90)+'%';
+  }
+  bar.style.width='100%';
+  setTimeout(()=>{prog.style.display='none';bar.style.width='0%';},600);
+  e.target.value='';
+}
+function handleCallDocs(e){
+  Array.from(e.target.files).forEach(f=>{
+    pendingCallDocs.push(f);
+    document.getElementById('kc-doc-list').innerHTML+=`<div class="achip">📎 ${f.name}</div>`;
+  });
+}
+// ─────────────────────────────────────────────
+// ENSURE CUSTOMER EXISTS IN SUPABASE
+// Seeded customers have local IDs like 'c42' — not valid UUIDs.
+// This upserts them to Supabase and updates their local ID to the
+// real UUID so all subsequent calls/contacts/media link correctly.
+// ─────────────────────────────────────────────
+async function ensureInSupabase(localId){
+  if(!SB_READY) return localId;
+  // Already a real UUID (contains hyphens)
+  if(localId && localId.includes('-')) return localId;
+  const c=customers.find(x=>x.id===localId);
+  if(!c) return localId;
+  try {
+    // Check if already synced by name
+    const existing=await sb.query('customers',`?name=eq.${encodeURIComponent(c.name)}&limit=1`);
+    let realId;
+    if(existing && existing.length>0){
+      realId=existing[0].id;
+    } else {
+      const [saved]=await sb.insert('customers',{
+        name:c.name, group:c.group||'', region:c.region||'AUCKLAND, NEW ZEALAND',
+        status:c.status||'ok', address:c.address||'', phone:c.phone||'',
+        email:c.email||'', notes:c.notes||''
+      });
+      realId=saved.id;
+    }
+    // Update local record with real UUID
+    const idx=customers.findIndex(x=>x.id===localId);
+    if(idx>=0){ customers[idx].id=realId; }
+    LS.set('fsm_customers',customers);
+    // Update currentCustId if needed
+    if(currentCustId===localId) currentCustId=realId;
+    return realId;
+  } catch(e){
+    console.warn('ensureInSupabase failed:',e);
+    return localId;
+  }
+}
+
+async function saveCall(){
+  const custId=document.getElementById('kc-custid').value;
+  const date=document.getElementById('kc-date').value;
+  const notes=document.getElementById('kc-notes').value.trim();
+  const statusUpd=document.getElementById('kc-status').value;
+  if(!date){ showToast('Please select a date'); return; }
+  const btn=document.getElementById('save-call-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  setSyncDot('syncing');
+  try {
+    // Ensure customer exists in Supabase with a valid UUID
+    const resolvedCustId = await ensureInSupabase(custId);
+    let callId, callRec;
+    if(SB_READY){
+      const [saved]=await sb.insert('calls',{customer_id:resolvedCustId,call_date:date,notes});
+      callId=saved.id; callRec={...saved};
+    } else {
+      callId='k'+Date.now();
+      callRec={id:callId,customer_id:custId,customerId:custId,call_date:date,date,notes};
+      calls.push(callRec); LS.set('fsm_calls',calls);
+    }
+    // upload photos
+    for(const p of pendingCallPhotos){
+      let url;
+      if(SB_READY){
+        const path=`calls/${callId}/${Date.now()}-${p.file.name}`;
+        url=await sb.uploadFile(path,p.file,p.file.type);
+        const [att]=await sb.insert('call_attachments',{call_id:callId,customer_id:resolvedCustId,file_name:p.file.name,file_type:p.file.type,storage_path:path,size_bytes:p.file.size});
+        callAtts.push({...att,url});
+      } else {
+        const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(p.file);});
+        const att={id:'a'+Date.now(),call_id:callId,callId,customer_id:custId,file_name:p.file.name,file_type:'image/jpeg',url:dataUrl,storage_path:dataUrl};
+        callAtts.push(att); LS.set('fsm_callatts',callAtts);
+      }
+    }
+    // upload docs
+    for(const f of pendingCallDocs){
+      if(SB_READY){
+        const path=`calls/${callId}/${Date.now()}-${f.name}`;
+        const url=await sb.uploadFile(path,f,f.type);
+        const [att]=await sb.insert('call_attachments',{call_id:callId,customer_id:resolvedCustId,file_name:f.name,file_type:f.type,storage_path:path,size_bytes:f.size});
+        callAtts.push({...att,url});
+      } else {
+        const att={id:'a'+Date.now(),call_id:callId,callId,customer_id:custId,file_name:f.name,file_type:f.type,url:'',storage_path:''};
+        callAtts.push(att); LS.set('fsm_callatts',callAtts);
+      }
+    }
+    if(statusUpd){
+      const idx=customers.findIndex(c=>c.id===resolvedCustId);
+      if(idx>=0){
+        customers[idx].status=statusUpd;
+        if(SB_READY) await sb.update('customers',resolvedCustId,{status:statusUpd});
+        LS.set('fsm_customers',customers);
+      }
+    }
+    if(SB_READY) calls.push(callRec);
+    closeModal('m-call');
+    showToast('Call saved!');
+    setSyncDot('ok');
+    if(currentCustId===resolvedCustId){ openCustomer(resolvedCustId); }
+    renderDashboard();
+  } catch(err){
+    showToast('Save failed: '+err.message);
+    setSyncDot('err');
+  } finally {
+    btn.disabled=false; btn.textContent='Save Call';
+  }
+}
+async function deleteCall(callId,custId){
+  if(!confirm('Delete this call?')) return;
+  try {
+    if(SB_READY){
+      await sb.delete('calls',callId);
+    }
+    calls=calls.filter(c=>c.id!==callId);
+    callAtts=callAtts.filter(a=>(a.call_id||a.callId)!==callId);
+    LS.set('fsm_calls',calls); LS.set('fsm_callatts',callAtts);
+    showToast('Deleted');
+    openCustomer(custId);
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ─────────────────────────────────────────────
+// ALL CALLS VIEW
+// ─────────────────────────────────────────────
+function renderAllCalls(){
+  const sorted=[...calls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date));
+  const el=document.getElementById('all-calls-list');
+  if(!sorted.length){el.innerHTML='<div class="empty">No calls logged yet</div>';return;}
+  el.innerHTML=sorted.map(c=>{
+    const cust=customers.find(x=>x.id===(c.customer_id||c.customerId));
+    return`<div class="kccard" onclick="openCustomer('${c.customer_id||c.customerId}')" style="cursor:pointer;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:500">${cust?cust.name:'—'}</span>
+        <span class="kdate">${fmtDate(c.call_date||c.date)}</span>
+      </div>
+      ${cust?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">${cust.group}</div>`:''}
+      <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,100)+(c.notes.length>100?'…':''):'<em>No notes</em>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// ADD / EDIT CUSTOMER
+// ─────────────────────────────────────────────
+function openAddCustomer(){
+  document.getElementById('m-cust-title').textContent='Add Customer';
+  document.getElementById('ec-id').value='';
+  ['name','group','address','phone','email','notes'].forEach(f=>document.getElementById('ec-'+f).value='');
+  document.getElementById('ec-region').value='Auckland, New Zealand';
+  document.getElementById('ec-status').value='ok';
+  openModal('m-customer');
+}
+function openEditCustomer(id){
+  const c=customers.find(x=>x.id===id); if(!c) return;
+  document.getElementById('m-cust-title').textContent='Edit Customer';
+  document.getElementById('ec-id').value=id;
+  document.getElementById('ec-name').value=c.name;
+  document.getElementById('ec-group').value=c.group||'';
+  document.getElementById('ec-region').value=c.region||'Auckland, New Zealand';
+  document.getElementById('ec-status').value=c.status||'ok';
+  document.getElementById('ec-address').value=c.address||'';
+  document.getElementById('ec-phone').value=c.phone||'';
+  document.getElementById('ec-email').value=c.email||'';
+  document.getElementById('ec-notes').value=c.notes||'';
+  openModal('m-customer');
+}
+async function saveCustomer(){
+  const name=document.getElementById('ec-name').value.trim();
+  if(!name){ showToast('Enter a name'); return; }
+  const id=document.getElementById('ec-id').value;
+  const data={name,group:document.getElementById('ec-group').value.trim(),region:document.getElementById('ec-region').value.trim(),status:document.getElementById('ec-status').value,address:document.getElementById('ec-address').value.trim(),phone:document.getElementById('ec-phone').value.trim(),email:document.getElementById('ec-email').value.trim(),notes:document.getElementById('ec-notes').value.trim()};
+  setSyncDot('syncing');
+  try {
+    if(id){
+      const resolvedId = await ensureInSupabase(id);
+      const idx=customers.findIndex(c=>c.id===resolvedId);
+      if(idx>=0){ customers[idx]={...customers[idx],...data}; }
+      if(SB_READY) await sb.update('customers',resolvedId,data);
+    } else {
+      if(SB_READY){
+        const [saved]=await sb.insert('customers',data);
+        customers.push(saved);
+      } else {
+        customers.push({id:'c'+Date.now(),...data});
+      }
+    }
+    LS.set('fsm_customers',customers);
+    closeModal('m-customer');
+    showToast(id?'Updated!':'Customer added!');
+    setSyncDot('ok');
+    buildFilterPills(); renderCustomers();
+    if(id&&currentCustId===id) openCustomer(id);
+  } catch(e){ showToast('Error: '+e.message); setSyncDot('err'); }
+}
+
+// ─────────────────────────────────────────────
+// CONTACTS
+// ─────────────────────────────────────────────
+function openAddContact(custId){
+  document.getElementById('m-ct-title').textContent='Add Contact';
+  document.getElementById('ct-custid').value=custId;
+  document.getElementById('ct-id').value='';
+  ['name','role','phone','email'].forEach(f=>document.getElementById('ct-'+f).value='');
+  openModal('m-contact');
+}
+function openEditContact(custId, ctId){
+  const ct=contacts.find(x=>x.id===ctId||String(x.id)===String(ctId));
+  if(!ct) return;
+  document.getElementById('m-ct-title').textContent='Edit Contact';
+  document.getElementById('ct-custid').value=custId;
+  document.getElementById('ct-id').value=ctId;
+  document.getElementById('ct-name').value=ct.name||'';
+  document.getElementById('ct-role').value=ct.role||'';
+  document.getElementById('ct-phone').value=ct.phone||'';
+  document.getElementById('ct-email').value=ct.email||'';
+  openModal('m-contact');
+}
+async function saveContact(){
+  const rawCustId=document.getElementById('ct-custid').value;
+  const custId = SB_READY ? await ensureInSupabase(rawCustId) : rawCustId;
+  const name=document.getElementById('ct-name').value.trim();
+  if(!name){ showToast('Enter contact name'); return; }
+  const ctId=document.getElementById('ct-id').value;
+  const data={customer_id:custId,customerId:custId,name,role:document.getElementById('ct-role').value.trim(),phone:document.getElementById('ct-phone').value.trim(),email:document.getElementById('ct-email').value.trim()};
+  setSyncDot('syncing');
+  try {
+    if(ctId){
+      const idx=contacts.findIndex(c=>c.id===ctId);
+      if(idx>=0) contacts[idx]={...contacts[idx],...data};
+      if(SB_READY) await sb.update('contacts',ctId,data);
+    } else {
+      if(SB_READY){ const [s]=await sb.insert('contacts',data); contacts.push(s); }
+      else { contacts.push({id:'ct'+Date.now(),...data}); }
+    }
+    LS.set('fsm_contacts',contacts);
+    closeModal('m-contact');
+    showToast('Contact saved!');
+    setSyncDot('ok');
+    if(currentCustId===custId){ openCustomer(custId); setTimeout(()=>showTab('contacts',custId),50); }
+  } catch(e){ showToast('Error: '+e.message); setSyncDot('err'); }
+}
+
+// ─────────────────────────────────────────────
+// BULK IMPORT (CSV)
+// ─────────────────────────────────────────────
+function handleBulkImport(e){
+  const file=e.target.files[0]; if(!file) return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='xlsx'||ext==='xls'){
+    showToast('Reading file…');
+    loadSheetJS(()=>parseXLSX(file));
+  } else {
+    const reader=new FileReader();
+    reader.onload=ev=>parseImportRows(csvToRows(ev.target.result));
+    reader.readAsText(file);
+  }
+  e.target.value='';
+}
+
+function loadSheetJS(cb){
+  if(window.XLSX){ cb(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  s.onload=cb;
+  s.onerror=()=>showToast('Could not load Excel parser. Save file as CSV and try again.');
+  document.head.appendChild(s);
+}
+
+function parseXLSX(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try {
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      // header:1 gives array-of-arrays; we map manually to handle merged/blank headers
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(aoa.length<2){ showToast('File appears empty'); return; }
+      // First non-empty row is headers
+      const hdrs=aoa[0].map(h=>String(h).trim());
+      const rows=aoa.slice(1).map(row=>{
+        const obj={};
+        hdrs.forEach((h,i)=>obj[h]=String(row[i]||'').trim());
+        return obj;
+      });
+      parseImportRows(rows);
+    } catch(err){
+      showToast('Excel read error: '+err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function csvToRows(text){
+  const lines=text.trim().split('\n');
+  if(lines.length<2) return [];
+  const hdrs=lines[0].split(',').map(h=>h.trim().replace(/['"]/g,''));
+  return lines.slice(1).map(line=>{
+    const cols=line.split(',').map(c=>c.trim().replace(/['"]/g,''));
+    const obj={};
+    hdrs.forEach((h,i)=>obj[h]=cols[i]||'');
+    return obj;
+  });
+}
+
+function parseImportRows(rows){
+  // Find the right columns — handles HEAD ACCOUNT NAME / NAME / NZ_REGION
+  // and also simpler formats like Name / Group / Region
+  const findCol=(row,candidates)=>{
+    const keys=Object.keys(row);
+    for(const c of candidates){
+      const k=keys.find(k=>k.trim().toLowerCase()===c.toLowerCase());
+      if(k) return k;
+    }
+    // fallback: partial match
+    for(const c of candidates){
+      const k=keys.find(k=>k.toLowerCase().includes(c.toLowerCase()));
+      if(k) return k;
+    }
+    return null;
+  };
+  if(!rows.length){ showToast('No data found in file'); return; }
+  const sample=rows[0];
+  const nameCol  = findCol(sample,['NAME','Store Name','Branch Name','name']);
+  const groupCol = findCol(sample,['HEAD ACCOUNT NAME','Group','Head Office','Account','group']);
+  const regionCol= findCol(sample,['NZ_REGION','Region','region']);
+
+  if(!nameCol){ showToast('Cannot find a Name column in this file'); return; }
+
+  let added=0, skipped=0;
+  rows.forEach((row,i)=>{
+    const name=(row[nameCol]||'').trim();
+    // skip blank rows and the "Applied filters" junk row Supabase exports append
+    if(!name || name.toLowerCase().startsWith('applied filter')) return;
+    // skip rows where the name looks like a header repeated
+    if(name.toLowerCase()==='name') return;
+    if(customers.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+      skipped++; return;
+    }
+    const group =((groupCol  ? (row[groupCol] ||'') : '')).trim().toUpperCase();
+    const region=(regionCol ? (row[regionCol]||'') : 'AUCKLAND, NEW ZEALAND').trim().toUpperCase()||'AUCKLAND, NEW ZEALAND';
+    customers.push({
+      id:'c'+Date.now()+i,
+      name, group, region,
+      status:'ok', address:'', phone:'', email:'', notes:''
+    });
+    added++;
+  });
+
+  LS.set('fsm_customers',customers);
+  buildFilterPills(); renderCustomers();
+  const msg=skipped>0
+    ? `Imported ${added} new · ${skipped} already exist`
+    : `Imported ${added} customer${added!==1?'s':''}`;
+  showToast(msg);
+  // Also push new customers to Supabase so all devices get them
+  if(SB_READY && added>0){
+    const newOnes=customers.slice(-added);
+    Promise.all(newOnes.map(c=>sb.insert('customers',{
+      name:c.name, group:c.group, region:c.region,
+      status:c.status, address:c.address||'', phone:c.phone||'', email:c.email||'', notes:c.notes||''
+    }).catch(()=>{}))).then(()=>{ setSyncDot('ok'); showToast('Synced to cloud ✓'); });
+  }
+}
+
+// ─────────────────────────────────────────────
+// VOICE TO TEXT
+// ─────────────────────────────────────────────
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){showToast('Voice not available on this browser');return;}
+  if(isRec){ recognition&&recognition.stop(); return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();
+  recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-NZ';
+  const btn=document.getElementById('vbtn');
+  const sta=document.getElementById('vstatus');
+  const ta=document.getElementById('kc-notes');
+  const base=ta.value;
+  recognition.onstart=()=>{isRec=true;btn.classList.add('rec');sta.style.display='block';};
+  recognition.onresult=ev=>{let t='';for(let i=ev.resultIndex;i<ev.results.length;i++)t+=ev.results[i][0].transcript;ta.value=(base?(base+' '):'')+t;};
+  recognition.onend=()=>{isRec=false;btn.classList.remove('rec');sta.style.display='none';};
+  recognition.onerror=()=>{isRec=false;btn.classList.remove('rec');sta.style.display='none';showToast('Mic error — check permissions');};
+  recognition.start();
+}
+
+// ─────────────────────────────────────────────
+// SEARCH
+// ─────────────────────────────────────────────
+function openSearch(){ document.getElementById('srch-overlay').classList.add('open'); setTimeout(()=>document.getElementById('srch-input').focus(),60); }
+function closeSearch(){ document.getElementById('srch-overlay').classList.remove('open'); document.getElementById('srch-input').value=''; document.getElementById('srch-results').innerHTML=''; }
+function doSearch(q){
+  const el=document.getElementById('srch-results');
+  if(!q){el.innerHTML='';return;}
+  const r=customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.group.toLowerCase().includes(q.toLowerCase()));
+  if(!r.length){el.innerHTML='<div class="empty">No results</div>';return;}
+  el.innerHTML=r.map(c=>`<div class="ccard" onclick="closeSearch();openCustomer('${c.id}')">
+    <div class="cc-top"><div><div class="cc-name">${hl(c.name,q)}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${c.group}</div></div>${sbadge(c.status)}</div>
+  </div>`).join('');
+}
+function hl(t,q){return t.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:rgba(79,126,240,.3);color:inherit;border-radius:2px">$1</mark>');}
+
+// ─────────────────────────────────────────────
+// LIGHTBOX
+// ─────────────────────────────────────────────
+function openLB(src){ document.getElementById('lb-img').src=src; document.getElementById('lightbox').classList.add('open'); }
+function closeLB(){ document.getElementById('lightbox').classList.remove('open'); document.getElementById('lb-img').src=''; }
+document.getElementById('lightbox').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeLB(); });
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function fmtDate(d){ if(!d) return ''; return new Date(d+'T00:00:00').toLocaleDateString('en-NZ',{day:'numeric',month:'short',year:'numeric'}); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+
+// Close modals on overlay tap
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// ─────────────────────────────────────────────
+// SUPABASE SYNC ON LOAD
+// ─────────────────────────────────────────────
+async function syncFromSupabase(){
+  if(!SB_READY){ setSyncDot(''); return; }
+  setSyncDot('syncing');
+  try {
+    const [custs,cls,cts,cdocs,catts]=await Promise.all([
+      sb.query('customers','?order=name.asc'),
+      sb.query('calls','?order=call_date.desc'),
+      sb.query('contacts',''),
+      sb.query('customer_documents','?order=created_at.desc'),
+      sb.query('call_attachments','')
+    ]);
+    // Build public URLs for storage items
+    cdocs.forEach(d=>{ d.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${d.storage_path}`; });
+    catts.forEach(a=>{ if(a.storage_path) a.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${a.storage_path}`; });
+    if(custs.length>0) customers=custs;  // only replace if Supabase has data
+    if(cls.length>0||custs.length>0) calls=cls;
+    contacts=cts; custDocs=cdocs; callAtts=catts;
+    LS.set('fsm_customers',customers); LS.set('fsm_calls',calls);
+    LS.set('fsm_contacts',contacts); LS.set('fsm_custdocs',custDocs); LS.set('fsm_callatts',callAtts);
+    setSyncDot('ok');
+    buildFilterPills(); renderDashboard(); renderCustomers();
+  } catch(e){ setSyncDot('err'); console.warn('Supabase sync failed, using local cache',e); }
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
+// Normalise existing customer data (fix mixed case from older versions)
+customers = customers.map(c=>({...c, region:(c.region||'').toUpperCase()||'AUCKLAND, NEW ZEALAND', group:(c.group||'').toUpperCase()}));
+LS.set('fsm_customers', customers);
+initFilterListeners();  // attach event listeners FIRST
+buildFilterPills();
+renderDashboard();
+renderCustomers();
+syncFromSupabase();
+</script>
+</body>
+</html>
