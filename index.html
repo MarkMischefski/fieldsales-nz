@@ -205,24 +205,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <input type="file" id="bulk-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkImport(event)">
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
-    <div class="frow" id="status-filters">
-      <button class="fpill active" data-val="all" onclick="setStatusFilter(this,'all')">All</button>
-      <button class="fpill" data-val="ok" onclick="setStatusFilter(this,'ok')">✓ All OK</button>
-      <button class="fpill" data-val="risk" onclick="setStatusFilter(this,'risk')">⚠ At Risk</button>
-      <button class="fpill" data-val="elsewhere" onclick="setStatusFilter(this,'elsewhere')">✗ Buys Elsewhere</button>
-      <button class="fpill" data-val="monitor" onclick="setStatusFilter(this,'monitor')">◎ Monitor</button>
-      <button class="fpill" data-val="inactive" onclick="setStatusFilter(this,'inactive')">– Inactive</button>
+    <div class="frow" id="status-filters" data-filtertype="status">
+      <button class="fpill active" data-val="all">All</button>
+      <button class="fpill" data-val="ok">All OK</button>
+      <button class="fpill" data-val="risk">At Risk</button>
+      <button class="fpill" data-val="elsewhere">Buys Elsewhere</button>
+      <button class="fpill" data-val="monitor">Monitor</button>
+      <button class="fpill" data-val="inactive">Inactive</button>
     </div>
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
-    <div class="frow" id="group-filters"></div>
+    <div class="frow" id="group-filters" data-filtertype="group"></div>
 
     <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Region</span></div>
-    <div class="frow" id="region-filters"></div>
+    <div class="frow" id="region-filters" data-filtertype="region"></div>
 
     <div id="filter-summary" style="display:none;padding:2px 18px 10px;align-items:center;justify-content:space-between">
       <span id="filter-summary-text" style="font-size:13px;color:var(--text2)"></span>
-      <button onclick="clearAllFilters()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">Clear all</button>
+      <button id="clear-filters-btn" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">Clear all</button>
     </div>
 
     <div class="clist" id="customer-list"></div>
@@ -605,69 +605,58 @@ function sbadge(s){
   const [c,l]=m[s]||m.ok;
   return`<span class="sbadge ${c}">${l}</span>`;
 }
-// ─── build dynamic group + region pill rows ───
-function shortLabel(g){ return g.replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
+// ─── FILTER SYSTEM ───────────────────────────────────────────────────────────
+function shortLabel(g){ return (g||'').replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
 function shortRegion(r){ return (r||'').replace(/, NEW ZEALAND$/i,'').replace(/, NZ$/i,''); }
 
 function buildFilterPills(){
-  const groups=[...new Set(customers.map(c=>c.group||'').filter(Boolean))].sort();
-  const regions=[...new Set(customers.map(c=>c.region||'').filter(Boolean))].sort();
+  const groups=[...new Set(customers.map(c=>(c.group||'').trim()).filter(Boolean))].sort();
+  const regions=[...new Set(customers.map(c=>(c.region||'').trim()).filter(Boolean))].sort();
 
-  const gEl=document.getElementById('group-filters');
-  const gBtns=[{val:'all',label:'All'},...groups.map(g=>({val:g,label:shortLabel(g)}))];
-  gEl.innerHTML='';
-  gBtns.forEach(item=>{
-    const b=document.createElement('button');
-    b.className='fpill'+(item.val===filterGroup?' active':'');
-    b.textContent=item.label;
-    b.dataset.val=item.val;
-    b.dataset.filtertype='group';
-    gEl.appendChild(b);
-  });
+  function makePills(containerId, items, currentVal){
+    const el=document.getElementById(containerId);
+    el.innerHTML='';
+    [{val:'all',label:'All'},...items].forEach(item=>{
+      const b=document.createElement('button');
+      b.className='fpill';
+      if(item.val===currentVal) b.classList.add('active');
+      b.textContent=item.label;
+      b.dataset.val=item.val;
+      el.appendChild(b);
+    });
+  }
+  makePills('group-filters',  groups.map(g=>({val:g, label:shortLabel(g)})),  filterGroup);
+  makePills('region-filters', regions.map(r=>({val:r, label:shortRegion(r)})), filterRegion);
+}
 
-  const rEl=document.getElementById('region-filters');
-  const rBtns=[{val:'all',label:'All'},...regions.map(r=>({val:r,label:shortRegion(r)}))];
-  rEl.innerHTML='';
-  rBtns.forEach(item=>{
-    const b=document.createElement('button');
-    b.className='fpill'+(item.val===filterRegion?' active':'');
-    b.textContent=item.label;
-    b.dataset.val=item.val;
-    b.dataset.filtertype='region';
-    rEl.appendChild(b);
+function initFilterListeners(){
+  document.querySelectorAll('#status-filters, #group-filters, #region-filters').forEach(row=>{
+    row.addEventListener('click', function(e){
+      const btn = e.target.closest('button.fpill');
+      if(!btn) return;
+      const val  = btn.dataset.val;
+      const type = this.dataset.filtertype;
+      this.querySelectorAll('button.fpill').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      if(type==='status') filterStatus=val;
+      if(type==='group')  filterGroup=val;
+      if(type==='region') filterRegion=val;
+      renderCustomers();
+    });
   });
+  const cb=document.getElementById('clear-filters-btn');
+  if(cb) cb.addEventListener('click', clearAllFilters);
 }
 
 function clearAllFilters(){
   filterStatus='all'; filterGroup='all'; filterRegion='all';
-  document.querySelectorAll('#status-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
-  document.querySelectorAll('#group-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
-  document.querySelectorAll('#region-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
-  renderCustomers();
-}
-
-// Single event listener handles ALL filter pill clicks via delegation
-function initFilterListeners(){
   ['status-filters','group-filters','region-filters'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('click', function(e){
-      const btn=e.target.closest('.fpill');
-      if(!btn) return;
-      const val=btn.dataset.val;
-      const type=this.dataset.filtertype;
-      this.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
-      btn.classList.add('active');
-      if(type==='status') filterStatus=val;
-      else if(type==='group') filterGroup=val;
-      else if(type==='region') filterRegion=val;
-      renderCustomers();
+    document.querySelectorAll('#'+id+' button.fpill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.val==='all');
     });
   });
-  const clearBtn=document.getElementById('clear-filters-btn');
-  if(clearBtn) clearBtn.addEventListener('click', clearAllFilters);
+  renderCustomers();
 }
-
 function renderCustomers(){
   let list=[...customers];
   if(filterStatus!=='all') list=list.filter(c=>c.status===filterStatus);
