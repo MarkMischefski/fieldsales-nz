@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1106,10 +1105,16 @@ async function saveCall(){
         url=await sb.uploadFile(path,p.file,p.file.type);
         const [att]=await sb.insert('call_attachments',{call_id:callId,customer_id:resolvedCustId,file_name:p.file.name,file_type:p.file.type,storage_path:path,size_bytes:p.file.size});
         callAtts.push({...att,url});
+        // Also add to customer Photos tab
+        const [cdoc]=await sb.insert('customer_documents',{customer_id:resolvedCustId,category:'Photo',file_name:p.file.name,file_type:p.file.type,storage_path:path,size_bytes:p.file.size,caption:'From call: '+date});
+        custDocs.push({...cdoc,url});
       } else {
         const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(p.file);});
-        const att={id:'a'+Date.now(),call_id:callId,callId,customer_id:custId,file_name:p.file.name,file_type:'image/jpeg',url:dataUrl,storage_path:dataUrl};
+        const att={id:'a'+Date.now(),call_id:callId,callId,customer_id:resolvedCustId,file_name:p.file.name,file_type:'image/jpeg',url:dataUrl,storage_path:dataUrl};
         callAtts.push(att); LS.set('fsm_callatts',callAtts);
+        // Also add to customer Photos tab locally
+        const cdoc={id:'d'+Date.now(),customer_id:resolvedCustId,customerId:resolvedCustId,category:'Photo',file_name:p.file.name,file_type:'image/jpeg',url:dataUrl,storage_path:dataUrl,caption:'From call: '+date,date:date};
+        custDocs.push(cdoc); LS.set('fsm_custdocs',custDocs);
       }
     }
     // upload docs
@@ -1276,7 +1281,8 @@ async function saveContact(){
     closeModal('m-contact');
     showToast('Contact saved!');
     setSyncDot('ok');
-    if(currentCustId===custId){ openCustomer(custId); setTimeout(()=>showTab('contacts',custId),50); }
+    const resolvedForNav = currentCustId || custId;
+    if(resolvedForNav){ openCustomer(resolvedForNav); setTimeout(()=>showTab('contacts',resolvedForNav),50); }
   } catch(e){ showToast('Error: '+e.message); setSyncDot('err'); }
 }
 
