@@ -203,14 +203,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </div>
     </div>
     <input type="file" id="bulk-file" accept=".csv" style="display:none" onchange="handleBulkImport(event)">
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
     <div class="frow" id="status-filters">
-      <button class="fpill active" onclick="setFilter(this,'all')">All</button>
-      <button class="fpill" onclick="setFilter(this,'ok')">✓ All OK</button>
-      <button class="fpill" onclick="setFilter(this,'risk')">⚠ At Risk</button>
-      <button class="fpill" onclick="setFilter(this,'elsewhere')">✗ Buys Elsewhere</button>
-      <button class="fpill" onclick="setFilter(this,'monitor')">◎ Monitor</button>
-      <button class="fpill" onclick="setFilter(this,'inactive')">– Inactive</button>
+      <button class="fpill active" onclick="setStatusFilter(this,'all')">All</button>
+      <button class="fpill" onclick="setStatusFilter(this,'ok')">✓ All OK</button>
+      <button class="fpill" onclick="setStatusFilter(this,'risk')">⚠ At Risk</button>
+      <button class="fpill" onclick="setStatusFilter(this,'elsewhere')">✗ Buys Elsewhere</button>
+      <button class="fpill" onclick="setStatusFilter(this,'monitor')">◎ Monitor</button>
+      <button class="fpill" onclick="setStatusFilter(this,'inactive')">– Inactive</button>
     </div>
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
+    <div class="frow" id="group-filters"></div>
+
+    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Region</span></div>
+    <div class="frow" id="region-filters"></div>
+
+    <div id="filter-summary" style="display:none;padding:2px 18px 10px;align-items:center;justify-content:space-between">
+      <span id="filter-summary-text" style="font-size:13px;color:var(--text2)"></span>
+      <button onclick="clearAllFilters()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">Clear all</button>
+    </div>
+
     <div class="clist" id="customer-list"></div>
   </div>
 
@@ -530,7 +544,7 @@ function compressImage(file, maxKB=200, maxPx=1200) {
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-let currentFilter='all', currentCustId=null;
+let filterStatus='all', filterGroup='all', filterRegion='all', currentCustId=null;
 let pendingCallPhotos=[], pendingCallDocs=[];
 let pendingMediaFile=null;
 let recognition=null, isRec=false;
@@ -551,7 +565,7 @@ function switchView(name,btn) {
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name==='customers') renderCustomers();
+  if (name==='customers') { buildFilterPills(); renderCustomers(); }
   if (name==='dashboard') renderDashboard();
   if (name==='calls') renderAllCalls();
 }
@@ -590,16 +604,61 @@ function sbadge(s){
   const [c,l]=m[s]||m.ok;
   return`<span class="sbadge ${c}">${l}</span>`;
 }
-function setFilter(btn,f){
-  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active'); currentFilter=f; renderCustomers();
+// ─── build dynamic group + region pill rows ───
+function buildFilterPills(){
+  const groups=[...new Set(customers.map(c=>c.group||'').filter(Boolean))].sort();
+  const regions=[...new Set(customers.map(c=>c.region||'').filter(Boolean))].sort();
+
+  const gEl=document.getElementById('group-filters');
+  gEl.innerHTML=`<button class="fpill active" onclick="setGroupFilter(this,'all')">All</button>`
+    +groups.map(g=>`<button class="fpill" onclick="setGroupFilter(this,${JSON.stringify(g)})">${g.replace(' HEAD OFFICE','').replace(' NATIONAL OFFICE - SUPPLIER #14235','').replace(' CO-OPERATIVE LTD','')}</button>`).join('');
+
+  const rEl=document.getElementById('region-filters');
+  rEl.innerHTML=`<button class="fpill active" onclick="setRegionFilter(this,'all')">All</button>`
+    +regions.map(r=>`<button class="fpill" onclick="setRegionFilter(this,${JSON.stringify(r)})">${r.replace(', NEW ZEALAND','').replace(', NZ','')}</button>`).join('');
 }
+
+function setStatusFilter(btn,f){
+  document.querySelectorAll('#status-filters .fpill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); filterStatus=f; renderCustomers();
+}
+function setGroupFilter(btn,f){
+  document.querySelectorAll('#group-filters .fpill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); filterGroup=f; renderCustomers();
+}
+function setRegionFilter(btn,f){
+  document.querySelectorAll('#region-filters .fpill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); filterRegion=f; renderCustomers();
+}
+function clearAllFilters(){
+  filterStatus='all'; filterGroup='all'; filterRegion='all';
+  document.querySelectorAll('#status-filters .fpill')[0].click();
+  document.querySelectorAll('#group-filters .fpill')[0].click();
+  document.querySelectorAll('#region-filters .fpill')[0].click();
+}
+
 function renderCustomers(){
   let list=[...customers];
-  if(currentFilter!=='all') list=list.filter(c=>c.status===currentFilter);
+  if(filterStatus!=='all') list=list.filter(c=>c.status===filterStatus);
+  if(filterGroup!=='all')  list=list.filter(c=>(c.group||'')===filterGroup);
+  if(filterRegion!=='all') list=list.filter(c=>(c.region||'')===filterRegion);
+
+  // update summary bar
+  const activeFilters=[];
+  if(filterStatus!=='all') activeFilters.push({ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[filterStatus]);
+  if(filterGroup!=='all')  activeFilters.push(filterGroup.replace(' HEAD OFFICE','').replace(' NATIONAL OFFICE - SUPPLIER #14235','').replace(' CO-OPERATIVE LTD',''));
+  if(filterRegion!=='all') activeFilters.push(filterRegion.replace(', NEW ZEALAND','').replace(', NZ',''));
+  const sumEl=document.getElementById('filter-summary');
+  if(activeFilters.length){
+    sumEl.style.display='flex';
+    document.getElementById('filter-summary-text').textContent=`${list.length} result${list.length!==1?'s':''} · ${activeFilters.join(' · ')}`;
+  } else {
+    sumEl.style.display='none';
+  }
+
   list.sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name));
   const el=document.getElementById('customer-list');
-  if(!list.length){el.innerHTML='<div class="empty">No customers match this filter</div>';return;}
+  if(!list.length){el.innerHTML='<div class="empty">No customers match these filters</div>';return;}
   let html='',lastG='';
   list.forEach(c=>{
     const cCalls=calls.filter(x=>(x.customer_id||x.customerId)===c.id);
@@ -1008,7 +1067,7 @@ async function saveCustomer(){
     closeModal('m-customer');
     showToast(id?'Updated!':'Customer added!');
     setSyncDot('ok');
-    renderCustomers();
+    buildFilterPills(); renderCustomers();
     if(id&&currentCustId===id) openCustomer(id);
   } catch(e){ showToast('Error: '+e.message); setSyncDot('err'); }
 }
@@ -1082,7 +1141,7 @@ function handleBulkImport(e){
       }
     }
     LS.set('fsm_customers',customers);
-    renderCustomers();
+    buildFilterPills(); renderCustomers();
     showToast(`Imported ${added} customer${added!==1?'s':''}`);
   };
   reader.readAsText(file);
@@ -1164,7 +1223,7 @@ async function syncFromSupabase(){
     LS.set('fsm_customers',customers); LS.set('fsm_calls',calls);
     LS.set('fsm_contacts',contacts); LS.set('fsm_custdocs',custDocs); LS.set('fsm_callatts',callAtts);
     setSyncDot('ok');
-    renderDashboard(); renderCustomers();
+    buildFilterPills(); renderDashboard(); renderCustomers();
   } catch(e){ setSyncDot('err'); console.warn('Supabase sync failed, using local cache',e); }
 }
 
@@ -1173,6 +1232,7 @@ async function syncFromSupabase(){
 // ─────────────────────────────────────────────
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
 renderDashboard();
+buildFilterPills();
 renderCustomers();
 syncFromSupabase();
 </script>
