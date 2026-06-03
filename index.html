@@ -289,7 +289,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <input type="hidden" id="ec-id">
       <div class="fg"><label class="flabel">Store / Branch Name *</label><input type="text" id="ec-name" class="finput" placeholder="e.g. Mitre 10 Albany"></div>
       <div class="fg"><label class="flabel">Head Account / Group</label><input type="text" id="ec-group" class="finput" placeholder="e.g. Mitre 10 Head Office"></div>
-      <div class="fg"><label class="flabel">Region</label><input type="text" id="ec-region" class="finput" value="Auckland, New Zealand"></div>
+      <div class="fg"><label class="flabel">Region</label><input type="text" id="ec-region" class="finput" value="AUCKLAND, NEW ZEALAND"></div>
       <div class="fg"><label class="flabel">Status</label>
         <select id="ec-status" class="fsel">
           <option value="ok">✓ All OK</option><option value="risk">⚠ At Risk</option>
@@ -502,7 +502,7 @@ let callAtts  = LS.get('fsm_callatts');
 const SEED=[["COCKY'S WAIUKU LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["MARTEN BAKKER TIMBERS LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["PENROSE PANEL & ROOFING LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["STICKS BUILDING SUPPLIES LTD (BUILDLINK)","BUILDLINK HEAD OFFICE"],["TRADIE REPUBLIC LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["WOODMART LTD (BUILDLINK)","BUILDLINK HEAD OFFICE"],["BUNNINGS AVONDALE TRADE CENTRE","BUNNINGS HEAD OFFICE"],["BUNNINGS BOTANY","BUNNINGS HEAD OFFICE"],["BUNNINGS EAST TAMAKI (TRADE)","BUNNINGS HEAD OFFICE"],["BUNNINGS GLENFIELD","BUNNINGS HEAD OFFICE"],["BUNNINGS GREY LYNN","BUNNINGS HEAD OFFICE"],["BUNNINGS HENDERSON","BUNNINGS HEAD OFFICE"],["BUNNINGS MANUKAU","BUNNINGS HEAD OFFICE"],["BUNNINGS MT ROSKILL","BUNNINGS HEAD OFFICE"],["BUNNINGS MT WELLINGTON","BUNNINGS HEAD OFFICE"],["BUNNINGS NEW LYNN","BUNNINGS HEAD OFFICE"],["BUNNINGS NORTH SHORE","BUNNINGS HEAD OFFICE"],["BUNNINGS PAPAKURA","BUNNINGS HEAD OFFICE"],["BUNNINGS PUKEKOHE","BUNNINGS HEAD OFFICE"],["BUNNINGS TRADE SILVERDALE","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE SILVERDALE","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE TAKANINI","BUNNINGS HEAD OFFICE"],["BUNNINGS WAREHOUSE WESTGATE","BUNNINGS HEAD OFFICE"],["CARTERS ALBANY","CARTERS NATIONAL OFFICE"],["CARTERS AUCKLAND MANUFACTURING","CARTERS NATIONAL OFFICE"],["CARTERS DRURY","CARTERS NATIONAL OFFICE"],["CARTERS EAST TAMAKI","CARTERS NATIONAL OFFICE"],["CARTERS GLENFIELD","CARTERS NATIONAL OFFICE"],["CARTERS HENDERSON","CARTERS NATIONAL OFFICE"],["CARTERS NORTH SHORE","CARTERS NATIONAL OFFICE"],["CARTERS ONEHUNGA","CARTERS NATIONAL OFFICE"],["CARTERS PANMURE","CARTERS NATIONAL OFFICE"],["CARTERS PAPAKURA","CARTERS NATIONAL OFFICE"],["CARTERS PUKEKOHE","CARTERS NATIONAL OFFICE"],["CARTERS ST LUKES","CARTERS NATIONAL OFFICE"],["CARTERS WHANGAPARAOA","CARTERS NATIONAL OFFICE"],["ALBANY ITM","ITM CO-OPERATIVE LTD"],["DAYLE ITM AVONDALE","ITM CO-OPERATIVE LTD"],["DAYLE ITM EAST TAMAKI","ITM CO-OPERATIVE LTD"],["DYSART ITM GLEN INNES","ITM CO-OPERATIVE LTD"],["DYSART TIMBERS (DRURY) LTD","ITM CO-OPERATIVE LTD"],["HILLSIDE BUILDING SUPPLIES LTD","ITM CO-OPERATIVE LTD"],["HILLSIDE ITM GLENFIELD","ITM CO-OPERATIVE LTD"],["ITM SMITH TIMBER LTD","ITM CO-OPERATIVE LTD"],["ITM TUAKAU BUILDING CENTRE LTD","ITM CO-OPERATIVE LTD"],["MACCLURES ITM","ITM CO-OPERATIVE LTD"],["MADDREN ITM BLDG CENTRE KUMEU","ITM CO-OPERATIVE LTD"],["MADDREN ITM SILVERDALE","ITM CO-OPERATIVE LTD"],["MAHIA ITM","ITM CO-OPERATIVE LTD"],["PAPAKURA ITM","ITM CO-OPERATIVE LTD"],["THREE BROTHERS ITM PANMURE","ITM CO-OPERATIVE LTD"],["TRIBRO BUILDING CENTRE LTD (DRURY)","ITM CO-OPERATIVE LTD"],["WAIUKU ITM","ITM CO-OPERATIVE LTD"],["WECKS ITM FRAME AND TRUSS","ITM CO-OPERATIVE LTD"],["WECKS ITM PATUMAHOE","ITM CO-OPERATIVE LTD"],["WECKS ITM PUKEKOHE","ITM CO-OPERATIVE LTD"],["WESTERN ITM KUMEU","ITM CO-OPERATIVE LTD"],["WESTERN ITM SWANSON","ITM CO-OPERATIVE LTD"],["WESTERN ITM WHENUAPAI","ITM CO-OPERATIVE LTD"],["BEACHLANDS MITRE 10","MITRE 10 HEAD OFFICE"],["DEVONPORT HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GLEN INNES HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GREEN BAY HAMMER HARDWARE","MITRE 10 HEAD OFFICE"],["GROVE MITRE 10 BROWNS BAY","MITRE 10 HEAD OFFICE"],["GROVE MITRE 10 TAKAPUNA","MITRE 10 HEAD OFFICE"],["HAMMER HARDWARE NEWMARKET","MITRE 10 HEAD OFFICE"],["HAMMER HARDWARE TE ATATU","MITRE 10 HEAD OFFICE"],["HELENSVILLE MITRE 10","MITRE 10 HEAD OFFICE"],["MITRE 10 BIRKENHEAD","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA ALBANY","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA BOTANY","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA GLENFIELD (GROVE)","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA HENDERSON","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA MANUKAU","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA MT WELLINGTON","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA NEW LYNN","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA PUKEKOHE","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA SILVERDALE","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA TAKANINI","MITRE 10 HEAD OFFICE"],["MITRE 10 MEGA WESTGATE","MITRE 10 HEAD OFFICE"],["MITRE 10 NEW LYNN","MITRE 10 HEAD OFFICE"],["MITRE 10 ONEHUNGA (GROVE)","MITRE 10 HEAD OFFICE"],["MITRE 10 PAKURANGA","MITRE 10 HEAD OFFICE"],["MITRE 10 PONSONBY","MITRE 10 HEAD OFFICE"],["MITRE 10 PUKEKOHE","MITRE 10 HEAD OFFICE"],["MITRE 10 WAIUKU","MITRE 10 HEAD OFFICE"],["MITRE 10 WESTGATE","MITRE 10 HEAD OFFICE"],["MITRE 10 WHANGAPARAOA","MITRE 10 HEAD OFFICE"],["RAYDEN MITRE 10 MT ROSKILL","MITRE 10 HEAD OFFICE"],["RAYDEN MITRE 10 MT WELLINGTON","MITRE 10 HEAD OFFICE"],["WELLESLEY STREET MITRE 10","MITRE 10 HEAD OFFICE"],["MADDREN TIMBER SILVERDALE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS ALBANY","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS COOK ST","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS MT WELLINGTON","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS NEW LYNN","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PAKURANGA","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PENROSE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS PUKEKOHE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS SILVERDALE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS TAKANINI","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WAIHEKE","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WAIRAU PARK GLENFIELD","PLACEMAKERS HEAD OFFICE"],["PLACEMAKERS WESTGATE","PLACEMAKERS HEAD OFFICE"],["TIMBERWORLD LTD (ALBANY)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (BIRKDALE)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (EAST TAMAKI)","TIMBERWORLD HEAD OFFICE"],["TIMBERWORLD LTD (WAIHEKE)","TIMBERWORLD HEAD OFFICE"]];
 
 if (customers.length === 0) {
-  customers = SEED.map((s,i) => ({ id:'c'+i, name:s[0], group:s[1], region:'Auckland, New Zealand', status:'ok', address:'', phone:'', email:'', notes:'' }));
+  customers = SEED.map((s,i) => ({ id:'c'+i, name:s[0], group:s[1], region:'AUCKLAND, NEW ZEALAND', status:'ok', address:'', phone:'', email:'', notes:'' }));
   LS.set('fsm_customers', customers);
 }
 
@@ -607,7 +607,7 @@ function sbadge(s){
 }
 // ─── build dynamic group + region pill rows ───
 function shortLabel(g){ return g.replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
-function shortRegion(r){ return r.replace(', NEW ZEALAND','').replace(', NZ',''); }
+function shortRegion(r){ return (r||'').replace(/, NEW ZEALAND$/i,'').replace(/, NZ$/i,''); }
 
 function buildFilterPills(){
   const groups=[...new Set(customers.map(c=>c.group||'').filter(Boolean))].sort();
@@ -671,8 +671,8 @@ function initFilterListeners(){
 function renderCustomers(){
   let list=[...customers];
   if(filterStatus!=='all') list=list.filter(c=>c.status===filterStatus);
-  if(filterGroup!=='all')  list=list.filter(c=>(c.group||'')===filterGroup);
-  if(filterRegion!=='all') list=list.filter(c=>(c.region||'')===filterRegion);
+  if(filterGroup!=='all')  list=list.filter(c=>(c.group||'').toUpperCase()===filterGroup.toUpperCase());
+  if(filterRegion!=='all') list=list.filter(c=>(c.region||'').toUpperCase()===filterRegion.toUpperCase());
 
   // update summary bar
   const activeFilters=[];
@@ -1247,8 +1247,8 @@ function parseImportRows(rows){
     if(customers.some(c=>c.name.toLowerCase()===name.toLowerCase())){
       skipped++; return;
     }
-    const group =(groupCol  ? (row[groupCol] ||'') : '').trim();
-    const region=(regionCol ? (row[regionCol]||'') : 'Auckland, New Zealand').trim()||'Auckland, New Zealand';
+    const group =((groupCol  ? (row[groupCol] ||'') : '')).trim().toUpperCase();
+    const region=(regionCol ? (row[regionCol]||'') : 'AUCKLAND, NEW ZEALAND').trim().toUpperCase()||'AUCKLAND, NEW ZEALAND';
     customers.push({
       id:'c'+Date.now()+i,
       name, group, region,
@@ -1350,6 +1350,9 @@ async function syncFromSupabase(){
 // INIT
 // ─────────────────────────────────────────────
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
+// Normalise existing customer data (fix mixed case from older versions)
+customers = customers.map(c=>({...c, region:(c.region||'').toUpperCase()||'AUCKLAND, NEW ZEALAND', group:(c.group||'').toUpperCase()}));
+LS.set('fsm_customers', customers);
 initFilterListeners();  // attach event listeners FIRST
 buildFilterPills();
 renderDashboard();
