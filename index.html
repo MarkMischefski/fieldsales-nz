@@ -566,6 +566,7 @@ function switchView(name,btn) {
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
   if (name==='customers') { buildFilterPills(); renderCustomers(); }
+  // listeners are always live (attached once at init)
   if (name==='dashboard') renderDashboard();
   if (name==='calls') renderAllCalls();
 }
@@ -605,61 +606,66 @@ function sbadge(s){
   return`<span class="sbadge ${c}">${l}</span>`;
 }
 // ─── build dynamic group + region pill rows ───
+function shortLabel(g){ return g.replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
+function shortRegion(r){ return r.replace(', NEW ZEALAND','').replace(', NZ',''); }
+
 function buildFilterPills(){
   const groups=[...new Set(customers.map(c=>c.group||'').filter(Boolean))].sort();
   const regions=[...new Set(customers.map(c=>c.region||'').filter(Boolean))].sort();
 
   const gEl=document.getElementById('group-filters');
-  gEl.innerHTML=`<button class="fpill active" data-val="all" onclick="setGroupFilter(this,'all')">All</button>`
-    +groups.map(g=>{
-      const safe=g.replace(/'/g,"\\'");
-      return `<button class="fpill" data-val="${g.replace(/"/g,'&quot;')}" onclick="setGroupFilter(this,'${safe}')">${shortLabel(g)}</button>`;
-    }).join('');
+  const gBtns=[{val:'all',label:'All'},...groups.map(g=>({val:g,label:shortLabel(g)}))];
+  gEl.innerHTML='';
+  gBtns.forEach(item=>{
+    const b=document.createElement('button');
+    b.className='fpill'+(item.val===filterGroup?' active':'');
+    b.textContent=item.label;
+    b.dataset.val=item.val;
+    b.dataset.filtertype='group';
+    gEl.appendChild(b);
+  });
 
   const rEl=document.getElementById('region-filters');
-  rEl.innerHTML=`<button class="fpill active" data-val="all" onclick="setRegionFilter(this,'all')">All</button>`
-    +regions.map(r=>{
-      const safe=r.replace(/'/g,"\\'");
-      return `<button class="fpill" data-val="${r.replace(/"/g,'&quot;')}" onclick="setRegionFilter(this,'${safe}')">${shortRegion(r)}</button>`;
-    }).join('');
-
-  highlightPill('group-filters', filterGroup);
-  highlightPill('region-filters', filterRegion);
-}
-
-function shortLabel(g){ return g.replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
-function shortRegion(r){ return r.replace(', NEW ZEALAND','').replace(', NZ',''); }
-
-function highlightPill(containerId, val){
-  document.querySelectorAll(`#${containerId} .fpill`).forEach(p=>{
-    p.classList.toggle('active', p.dataset.val===val);
+  const rBtns=[{val:'all',label:'All'},...regions.map(r=>({val:r,label:shortRegion(r)}))];
+  rEl.innerHTML='';
+  rBtns.forEach(item=>{
+    const b=document.createElement('button');
+    b.className='fpill'+(item.val===filterRegion?' active':'');
+    b.textContent=item.label;
+    b.dataset.val=item.val;
+    b.dataset.filtertype='region';
+    rEl.appendChild(b);
   });
 }
 
-function setStatusFilter(btn,f){
-  document.querySelectorAll('#status-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  filterStatus=f;
-  renderCustomers();
-}
-function setGroupFilter(btn,f){
-  document.querySelectorAll('#group-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  filterGroup=f;
-  renderCustomers();
-}
-function setRegionFilter(btn,f){
-  document.querySelectorAll('#region-filters .fpill').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  filterRegion=f;
-  renderCustomers();
-}
 function clearAllFilters(){
   filterStatus='all'; filterGroup='all'; filterRegion='all';
-  highlightPill('status-filters','all');
-  highlightPill('group-filters','all');
-  highlightPill('region-filters','all');
+  document.querySelectorAll('#status-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
+  document.querySelectorAll('#group-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
+  document.querySelectorAll('#region-filters .fpill').forEach(p=>p.classList.toggle('active', p.dataset.val==='all'));
   renderCustomers();
+}
+
+// Single event listener handles ALL filter pill clicks via delegation
+function initFilterListeners(){
+  ['status-filters','group-filters','region-filters'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('click', function(e){
+      const btn=e.target.closest('.fpill');
+      if(!btn) return;
+      const val=btn.dataset.val;
+      const type=this.dataset.filtertype;
+      this.querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      if(type==='status') filterStatus=val;
+      else if(type==='group') filterGroup=val;
+      else if(type==='region') filterRegion=val;
+      renderCustomers();
+    });
+  });
+  const clearBtn=document.getElementById('clear-filters-btn');
+  if(clearBtn) clearBtn.addEventListener('click', clearAllFilters);
 }
 
 function renderCustomers(){
@@ -1330,7 +1336,9 @@ async function syncFromSupabase(){
     // Build public URLs for storage items
     cdocs.forEach(d=>{ d.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${d.storage_path}`; });
     catts.forEach(a=>{ if(a.storage_path) a.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${a.storage_path}`; });
-    customers=custs; calls=cls; contacts=cts; custDocs=cdocs; callAtts=catts;
+    if(custs.length>0) customers=custs;  // only replace if Supabase has data
+    if(cls.length>0||custs.length>0) calls=cls;
+    contacts=cts; custDocs=cdocs; callAtts=catts;
     LS.set('fsm_customers',customers); LS.set('fsm_calls',calls);
     LS.set('fsm_contacts',contacts); LS.set('fsm_custdocs',custDocs); LS.set('fsm_callatts',callAtts);
     setSyncDot('ok');
@@ -1342,8 +1350,9 @@ async function syncFromSupabase(){
 // INIT
 // ─────────────────────────────────────────────
 document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
-renderDashboard();
+initFilterListeners();  // attach event listeners FIRST
 buildFilterPills();
+renderDashboard();
 renderCustomers();
 syncFromSupabase();
 </script>
