@@ -229,7 +229,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .filter-labels { padding: 0 28px 4px; }
 
   /* ── Calls list ── */
-  #all-calls-list { padding: 0 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  #all-calls-list { padding: 0 28px; }
+  #followups-list { padding: 0 28px; }
 
   /* ── Customer detail: right panel instead of full-screen overlay ── */
   #cdetail {
@@ -341,9 +342,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="scard" onclick="switchViewById('calls')" style="cursor:pointer"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
       <div class="scard" onclick="switchViewById('customers','risk')" style="cursor:pointer"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
       <div class="scard" onclick="switchViewById('customers','elsewhere')" style="cursor:pointer"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
+      <div class="scard" id="st-followups-card" onclick="switchViewById('followups')" style="cursor:pointer;grid-column:1/-1;background:rgba(79,126,240,.06);border-color:rgba(79,126,240,.2)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div class="slabel" style="color:var(--accent)">Outstanding Follow-ups</div><div class="sval" style="color:var(--accent)" id="st-followups">—</div></div>
+          <div style="font-size:11px;color:var(--text3)">View all →</div>
+        </div>
+        <div id="st-followups-next" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+      </div>
     </div>
     <div class="stitle">Recent Calls</div>
     <div id="recent-calls" class="sbody"></div>
+  </div>
+
+  <!-- FOLLOW-UPS -->
+  <div id="view-followups" class="view">
+    <div class="phdr"><h1>Follow-ups</h1></div>
+    <div id="followups-list" style="padding:0 18px"></div>
   </div>
 
   <!-- CUSTOMERS -->
@@ -387,7 +401,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <h1>Call Log</h1>
       <div style="display:flex;gap:8px">
         <button class="btn btn-s btn-sm desktop-only" onclick="exportToExcel()">⬇ Export</button>
-        <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Quick Log</button>
+        <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Log Call</button>
       </div>
     </div>
     <div id="all-calls-list" style="padding:0 18px"></div>
@@ -412,6 +426,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="ntab" onclick="switchView('calls',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.56 3.41 2 2 0 0 1 3.53 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.29 6.29l.87-.87a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
     Calls
+  </button>
+  <button class="ntab" id="nav-followups" onclick="switchView('followups',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span style="position:relative">Follow-ups<span id="followup-badge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:99px;padding:1px 4px;min-width:14px;text-align:center"></span></span>
   </button>
   <!-- Desktop-only: spacer + export button at bottom of sidebar -->
   <div class="desktop-only" style="display:none;flex:1"></div>
@@ -521,6 +539,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
           <option value="ok">✓ All OK</option><option value="risk">⚠ At Risk</option>
           <option value="elsewhere">✗ Buys Elsewhere</option><option value="monitor">◎ Monitor</option><option value="inactive">– Inactive</option>
         </select>
+      </div>
+      <div style="background:rgba(79,126,240,.06);border:1px solid rgba(79,126,240,.15);border-radius:var(--r);padding:14px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:12px">Follow-up Reminder</div>
+        <div class="fg" style="margin-bottom:10px">
+          <label class="flabel">Follow-up Note</label>
+          <textarea id="kc-followup-note" class="ftarea" rows="2" placeholder="What needs to be followed up…" style="min-height:60px"></textarea>
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="flabel">Follow-up By</label>
+          <input type="date" id="kc-followup-date" class="finput">
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:6px">
         <button class="btn btn-s" style="flex:1" onclick="closeModal('m-call')">Cancel</button>
@@ -838,13 +867,15 @@ function switchView(name,btn) {
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
   if (name==='customers') { resetFilters(); buildFilterPills(); renderCustomers(); }
+  if (name==='followups') { resetFilters(); }
   if (name==='dashboard') renderDashboard();
   if (name==='calls') renderAllCalls();
+  if (name==='followups') renderFollowups();
 }
 
 // Called from dashboard tiles — switch view without needing a nav button ref
 function switchViewById(name, statusFilter){
-  const btn = document.querySelector(`#bnav .ntab:nth-child(${name==='dashboard'?1:name==='customers'?2:3})`);
+  const navMap={'dashboard':1,'customers':2,'calls':3,'followups':4}; const btn = document.querySelector(`#bnav .ntab:nth-child(${navMap[name]||1})`);
   // Always reset first, then apply the specific filter if any
   resetFilters();
   switchView(name, btn);
@@ -868,6 +899,22 @@ function renderDashboard() {
   document.getElementById('st-calls').textContent=calls.filter(c=>new Date(c.call_date||c.date)>=ago).length;
   document.getElementById('st-risk').textContent=customers.filter(c=>c.status==='risk').length;
   document.getElementById('st-el').textContent=customers.filter(c=>c.status==='elsewhere').length;
+  // Follow-ups stats
+  const today=d.toISOString().split('T')[0];
+  const outstanding=calls.filter(c=>c.followup_date && !c.followup_done);
+  const overdue=outstanding.filter(c=>c.followup_date<today);
+  const upcoming=outstanding.filter(c=>c.followup_date>=today).sort((a,b)=>a.followup_date.localeCompare(b.followup_date));
+  document.getElementById('st-followups').textContent=outstanding.length;
+  const card=document.getElementById('st-followups-card');
+  if(overdue.length){ card.style.background='rgba(232,64,64,.08)'; card.style.borderColor='rgba(232,64,64,.25)'; document.querySelector('#st-followups-card .slabel').style.color='var(--red)'; document.getElementById('st-followups').style.color='var(--red)'; }
+  else { card.style.background='rgba(79,126,240,.06)'; card.style.borderColor='rgba(79,126,240,.2)'; document.querySelector('#st-followups-card .slabel').style.color='var(--accent)'; document.getElementById('st-followups').style.color='var(--accent)'; }
+  const nextEl=document.getElementById('st-followups-next');
+  if(overdue.length){ const cust=customers.find(x=>x.id===(overdue[0].customer_id||overdue[0].customerId)); nextEl.innerHTML=`<span style="color:var(--red)">⚠ ${overdue.length} overdue</span>${cust?' · '+cust.name:''}`;  }
+  else if(upcoming.length){ const cust=customers.find(x=>x.id===(upcoming[0].customer_id||upcoming[0].customerId)); nextEl.textContent=`Next: ${fmtDate(upcoming[0].followup_date)}${cust?' · '+cust.name:''}`; }
+  else if(!outstanding.length){ nextEl.textContent='No outstanding follow-ups'; }
+  // Badge on nav tab
+  const badge=document.getElementById('followup-badge');
+  if(badge){ if(outstanding.length){ badge.textContent=outstanding.length>9?'9+':outstanding.length; badge.style.display='inline'; } else { badge.style.display='none'; } }
   const rec=[...calls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date)).slice(0,5);
   const el=document.getElementById('recent-calls');
   if(!rec.length){el.innerHTML='<div class="empty">No calls logged yet</div>';return;}
@@ -1389,6 +1436,8 @@ function openNewCall(custId){
   document.getElementById('m-call-title').textContent='Log Sales Call';
   document.getElementById('kc-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('kc-notes').value='';
+  document.getElementById('kc-followup-note').value='';
+  document.getElementById('kc-followup-date').value='';
   document.getElementById('kc-status').value='';
   document.getElementById('kc-photo-previews').innerHTML='';
   document.getElementById('kc-doc-list').innerHTML='';
@@ -1407,6 +1456,8 @@ function openEditCall(callId, custId){
   document.getElementById('m-call-title').textContent='Edit Call';
   document.getElementById('kc-date').value=call.call_date||call.date||'';
   document.getElementById('kc-notes').value=call.notes||'';
+  document.getElementById('kc-followup-note').value=call.followup_note||'';
+  document.getElementById('kc-followup-date').value=call.followup_date||'';
   document.getElementById('kc-status').value='';
   document.getElementById('kc-photo-previews').innerHTML='';
   document.getElementById('kc-doc-list').innerHTML='';
@@ -1483,6 +1534,8 @@ async function saveCall(){
   const custId=document.getElementById('kc-custid').value;
   const date=document.getElementById('kc-date').value;
   const notes=document.getElementById('kc-notes').value.trim();
+  const followupNote=document.getElementById('kc-followup-note').value.trim();
+  const followupDate=document.getElementById('kc-followup-date').value||null;
   const statusUpd=document.getElementById('kc-status').value;
   const isEdit=!!existingCallId;
   if(!date){ showToast('Please select a date'); return; }
@@ -1496,10 +1549,10 @@ async function saveCall(){
     // EDIT existing call — just update notes + date, no new attachments
     if(isEdit){
       if(SB_READY){
-        await sb.update('calls', existingCallId, {call_date:date, notes});
+        await sb.update('calls', existingCallId, {call_date:date, notes, followup_note:followupNote, followup_date:followupDate});
       }
       const idx=calls.findIndex(c=>c.id===existingCallId);
-      if(idx>=0){ calls[idx]={...calls[idx], call_date:date, date, notes}; }
+      if(idx>=0){ calls[idx]={...calls[idx], call_date:date, date, notes, followup_note:followupNote, followup_date:followupDate}; }
       LS.set('fsm_calls',calls);
       closeModal('m-call');
       showToast('Call updated!');
@@ -1512,11 +1565,11 @@ async function saveCall(){
 
     let callId, callRec;
     if(SB_READY){
-      const [saved]=await sb.insert('calls',{customer_id:resolvedCustId,call_date:date,notes});
+      const [saved]=await sb.insert('calls',{customer_id:resolvedCustId,call_date:date,notes,followup_note:followupNote||null,followup_date:followupDate||null});
       callId=saved.id; callRec={...saved};
     } else {
       callId='k'+Date.now();
-      callRec={id:callId,customer_id:custId,customerId:custId,call_date:date,date,notes};
+      callRec={id:callId,customer_id:custId,customerId:custId,call_date:date,date,notes,followup_note:followupNote||null,followup_date:followupDate||null};
       calls.push(callRec); LS.set('fsm_calls',calls);
     }
     // upload photos
@@ -1626,37 +1679,124 @@ async function deleteCall(callId,custId){
   });
 }
 
+
+// ─────────────────────────────────────────────
+// FOLLOW-UPS VIEW
+// ─────────────────────────────────────────────
+function renderFollowups(){
+  const today=new Date().toISOString().split('T')[0];
+  const outstanding=calls
+    .filter(c=>c.followup_date&&!c.followup_done)
+    .sort((a,b)=>a.followup_date.localeCompare(b.followup_date));
+  const el=document.getElementById('followups-list');
+  if(!outstanding.length){
+    el.innerHTML='<div class="empty" style="padding:40px 0">🎉 No outstanding follow-ups</div>';
+    return;
+  }
+  const overdue=outstanding.filter(c=>c.followup_date<today);
+  const due=outstanding.filter(c=>c.followup_date>=today);
+  let html='';
+  if(overdue.length){
+    html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--red);padding:16px 0 8px;border-bottom:1px solid rgba(232,64,64,.2);margin-bottom:10px">Overdue (${overdue.length})</div>`;
+    html+=overdue.map(c=>followupCard(c,today)).join('');
+  }
+  if(due.length){
+    html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">Upcoming (${due.length})</div>`;
+    html+=due.map(c=>followupCard(c,today)).join('');
+  }
+  el.innerHTML=html;
+}
+
+function followupCard(c, today){
+  const cust=customers.find(x=>x.id===(c.customer_id||c.customerId));
+  const isOverdue=c.followup_date<today;
+  return`<div class="kccard" style="margin-bottom:10px;border-left:3px solid ${isOverdue?'var(--red)':'var(--accent)'}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <div style="cursor:pointer;flex:1" onclick="openCustomer('${c.customer_id||c.customerId}')">
+        <div style="font-size:14px;font-weight:600">${cust?cust.name:'—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${cust?cust.group:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:600;color:${isOverdue?'var(--red)':'var(--accent)'}">${fmtDate(c.followup_date)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Call: ${fmtDate(c.call_date||c.date)}</div>
+      </div>
+    </div>
+    ${c.followup_note?`<div style="font-size:13px;color:var(--text2);margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs)">${c.followup_note}</div>`:''}
+    <div style="display:flex;gap:8px">
+      <button onclick="markFollowupDone('${c.id}')" class="btn btn-p btn-sm" style="flex:1">✓ Mark Done</button>
+      <button onclick="openEditCall('${c.id}','${c.customer_id||c.customerId}')" class="btn btn-s btn-sm">Edit</button>
+    </div>
+  </div>`;
+}
+
+async function markFollowupDone(callId){
+  const idx=calls.findIndex(c=>c.id===callId);
+  if(idx<0) return;
+  calls[idx].followup_done=true;
+  LS.set('fsm_calls',calls);
+  if(SB_READY && callId.includes('-')){
+    try { await sb.update('calls',callId,{followup_done:true}); } catch(e){}
+  }
+  showToast('Follow-up marked done ✓');
+  renderFollowups();
+  renderDashboard();
+  renderAllCalls();
+}
+
 // ─────────────────────────────────────────────
 // ALL CALLS VIEW
 // ─────────────────────────────────────────────
 function renderAllCalls(){
   const sorted=[...calls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date));
   const el=document.getElementById('all-calls-list');
-  if(!sorted.length){el.innerHTML='<div class="empty">No calls logged yet</div>';return;}
-  el.innerHTML=sorted.map(c=>{
-    const cust=customers.find(x=>x.id===(c.customer_id||c.customerId));
-    const atts=callAtts.filter(a=>(a.call_id||a.callId)===c.id);
-    const photos=atts.filter(a=>a.file_type&&a.file_type.startsWith('image'));
-    return`<div class="kccard" onclick="openCustomer('${c.customer_id||c.customerId}')" style="cursor:pointer;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:15px;font-weight:600;line-height:1.2">${cust?cust.name:'Unknown customer'}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${cust?cust.group:''}</div>
+  if(!sorted.length){el.innerHTML='<div class="empty">No calls logged yet<br><button class="btn btn-p" style="margin:12px auto 0;display:flex" onclick="openQuickLog()">+ Log First Call</button></div>';return;}
+  const today=new Date().toISOString().split('T')[0];
+  // Group by month
+  const groups={};
+  sorted.forEach(c=>{
+    const d=c.call_date||c.date||'';
+    const key=d?d.substring(0,7):'unknown';
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(c);
+  });
+  let html='';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
+    const label=key==='unknown'?'Unknown date':new Date(key+'-01').toLocaleDateString('en-NZ',{month:'long',year:'numeric'});
+    html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">${label} <span style="color:var(--bg4);background:var(--bg3);padding:2px 7px;border-radius:99px;font-size:10px">${groups[key].length}</span></div>`;
+    groups[key].forEach(c=>{
+      const cust=customers.find(x=>x.id===(c.customer_id||c.customerId));
+      const atts=callAtts.filter(a=>(a.call_id||a.callId)===c.id);
+      const photos=atts.filter(a=>a.file_type&&a.file_type.startsWith('image'));
+      const hasFollowup=c.followup_date&&!c.followup_done;
+      const isOverdue=hasFollowup&&c.followup_date<today;
+      const followupBorder=isOverdue?'border-left:3px solid var(--red)':hasFollowup?'border-left:3px solid var(--accent)':'';
+      html+=`<div class="kccard" onclick="openCustomer('${c.customer_id||c.customerId}')" style="cursor:pointer;margin-bottom:10px;${followupBorder}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:600;line-height:1.2">${cust?cust.name:'Unknown customer'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${cust?cust.group:''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+            <span class="kdate" style="margin:0">${fmtDate(c.call_date||c.date)}</span>
+            ${cust?sbadge(cust.status):''}
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-          <span class="kdate" style="margin:0">${fmtDate(c.call_date||c.date)}</span>
-          ${cust?sbadge(cust.status):''}
+        <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,120)+(c.notes.length>120?'…':''):'<em style="color:var(--text3)">No notes</em>'}</div>
+        ${photos.length?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${photos.slice(0,4).map(p=>`<img src="${p.url||p.storage_path}" style="width:52px;height:52px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+        ${hasFollowup?`<div style="margin-top:8px;padding:7px 10px;background:${isOverdue?'rgba(232,64,64,.1)':'rgba(79,126,240,.08)'};border-radius:var(--rs);font-size:12px">
+          <span style="color:${isOverdue?'var(--red)':'var(--accent)'};font-weight:500">${isOverdue?'⚠ Overdue':'📅 Follow-up'}: ${fmtDate(c.followup_date)}</span>
+          ${c.followup_note?`<div style="color:var(--text2);margin-top:3px">${c.followup_note}</div>`:''}
+          <button onclick="event.stopPropagation();markFollowupDone('${c.id}')" style="margin-top:6px;background:none;border:1px solid ${isOverdue?'var(--red)':'var(--accent)'};color:${isOverdue?'var(--red)':'var(--accent)'};border-radius:var(--rs);padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Mark done</button>
+        </div>`:''}
+        ${atts.length&&!photos.length?`<div style="margin-top:6px;font-size:11px;color:var(--text3)">${atts.length} attachment${atts.length>1?'s':''}</div>`:''}
+        <div style="display:flex;gap:12px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <button onclick="event.stopPropagation();openEditCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:0">Edit</button>
+          <button onclick="event.stopPropagation();deleteCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0">Delete</button>
         </div>
-      </div>
-      <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,120)+(c.notes.length>120?'…':''):'<em style="color:var(--text3)">No notes</em>'}</div>
-      ${photos.length?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${photos.slice(0,4).map(p=>`<img src="${p.url||p.storage_path}" style="width:52px;height:52px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
-      ${atts.length?`<div style="margin-top:6px;font-size:11px;color:var(--text3)">${atts.length} attachment${atts.length>1?'s':''}</div>`:''}
-      <div style="display:flex;gap:12px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
-        <button onclick="event.stopPropagation();openEditCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:0">Edit</button>
-        <button onclick="event.stopPropagation();deleteCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
 }
 
 // ─────────────────────────────────────────────
