@@ -1529,7 +1529,8 @@ document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e
 // ─────────────────────────────────────────────
 async function syncFromSupabase(){
   if(!SB_READY){ setSyncDot(''); return; }
-  setSyncDot('syncing');
+  // Don't show syncing spinner on background refreshes — only on first load
+  if(customers.length === 0) setSyncDot('syncing');
   try {
     const [custs,cls,cts,cdocs,catts]=await Promise.all([
       sb.query('customers','?order=name.asc'),
@@ -1610,6 +1611,30 @@ async function pushLocalCustomersToSupabase(){
 renderDashboard();
 renderCustomers();
 syncFromSupabase();
+
+// ── Auto-sync every 60 seconds ──
+if(SB_READY){
+  setInterval(syncFromSupabase, 60000);
+}
+
+// ── Sync when user returns to the app (tab focus / phone unlock) ──
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && SB_READY){
+    syncFromSupabase();
+  }
+});
+
+// ── Sync when coming back online after losing connection ──
+window.addEventListener('online', ()=>{
+  if(SB_READY){
+    showToast('Back online — syncing…');
+    syncFromSupabase();
+  }
+});
+window.addEventListener('offline', ()=>{
+  setSyncDot('err');
+  showToast('Offline — changes saved locally');
+});
 </script>
 
 <!-- ═══════ MODAL: CONFIRM DELETE ═══════ -->
