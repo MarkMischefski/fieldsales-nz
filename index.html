@@ -342,6 +342,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="scard" onclick="switchViewById('calls')" style="cursor:pointer"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
       <div class="scard" onclick="switchViewById('customers','risk')" style="cursor:pointer"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
       <div class="scard" onclick="switchViewById('customers','elsewhere')" style="cursor:pointer"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
+      <div class="scard" onclick="switchViewById('customers','monitor')" style="cursor:pointer"><div class="slabel" style="color:var(--purple)">Monitor</div><div class="sval" style="color:var(--purple)" id="st-monitor">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
       <div class="scard" id="st-followups-card" onclick="switchViewById('followups')" style="cursor:pointer;grid-column:1/-1;background:rgba(79,126,240,.06);border-color:rgba(79,126,240,.2)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div class="slabel" style="color:var(--accent)">Outstanding Follow-ups</div><div class="sval" style="color:var(--accent)" id="st-followups">—</div></div>
@@ -356,7 +357,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <!-- FOLLOW-UPS -->
   <div id="view-followups" class="view">
-    <div class="phdr"><h1>Follow-ups</h1></div>
+    <div class="phdr"><h1>Follow-ups</h1><button class="btn btn-p btn-sm" onclick="openQuickLog()">+ New Follow-up</button></div>
     <div id="followups-list" style="padding:0 18px"></div>
   </div>
 
@@ -899,6 +900,7 @@ function renderDashboard() {
   document.getElementById('st-calls').textContent=calls.filter(c=>new Date(c.call_date||c.date)>=ago).length;
   document.getElementById('st-risk').textContent=customers.filter(c=>c.status==='risk').length;
   document.getElementById('st-el').textContent=customers.filter(c=>c.status==='elsewhere').length;
+  document.getElementById('st-monitor').textContent=customers.filter(c=>c.status==='monitor').length;
   // Follow-ups stats
   const today=d.toISOString().split('T')[0];
   const outstanding=calls.filter(c=>c.followup_date && !c.followup_done);
@@ -1090,6 +1092,7 @@ function showTab(tab,id){
   const c=customers.find(x=>x.id===id);
   const el=document.getElementById('dt-content');
   if(tab==='calls'){
+    const today=new Date().toISOString().split('T')[0];
     const cCalls=[...calls.filter(x=>(x.customer_id||x.customerId)===id)].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date));
     if(!cCalls.length){el.innerHTML=`<div class="empty">No calls yet<br><button class="btn btn-p" style="margin:12px auto 0;display:flex" onclick="openNewCall('${id}')">+ Log First Call</button></div>`;return;}
     el.innerHTML=cCalls.map(call=>{
@@ -1103,6 +1106,7 @@ function showTab(tab,id){
           </div>
         </div>
         <div class="knote">${call.notes||'<em style="color:var(--text3)">No notes</em>'}</div>
+        ${(call.followup_date&&!call.followup_done)?`<div style="margin-top:8px;padding:7px 10px;background:${call.followup_date<today?'rgba(232,64,64,.1)':'rgba(79,126,240,.08)'};border-radius:var(--rs);font-size:12px"><span style="font-weight:500;color:${call.followup_date<today?'var(--red)':'var(--accent)'}">${call.followup_date<today?'⚠ Overdue':'📅 Follow-up'}: ${fmtDate(call.followup_date)}</span>${call.followup_note?`<div style="color:var(--text2);margin-top:3px">${call.followup_note}</div>`:''}<button onclick="event.stopPropagation();markFollowupDone('${call.id}')" style="margin-top:6px;background:none;border:1px solid ${call.followup_date<today?'var(--red)':'var(--accent)'};color:${call.followup_date<today?'var(--red)':'var(--accent)'};border-radius:var(--rs);padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Mark done</button></div>`:''}
         ${atts.length?`<div style="margin-top:8px;display:flex;flex-wrap:wrap">${atts.map(a=>a.file_type&&a.file_type.startsWith('image')?`<img src="${a.url||a.storage_path}" onclick="openLB('${a.url||a.storage_path}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;margin:3px;cursor:pointer">`:`<div class="achip">📎 ${a.file_name||a.name}</div>`).join('')}</div>`:''}
       </div>`;
     }).join('');
