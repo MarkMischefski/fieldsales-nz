@@ -658,13 +658,21 @@ function setSyncDot(state) {
 // ─────────────────────────────────────────────
 // VIEWS
 // ─────────────────────────────────────────────
+function resetFilters(){
+  filterStatus='all'; filterGroup='all'; filterRegion='all';
+  ['status-filters','group-filters','region-filters'].forEach(id=>{
+    document.querySelectorAll('#'+id+' button.fpill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.val==='all');
+    });
+  });
+}
+
 function switchView(name,btn) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name==='customers') { buildFilterPills(); renderCustomers(); }
-  // listeners are always live (attached once at init)
+  if (name==='customers') { resetFilters(); buildFilterPills(); renderCustomers(); }
   if (name==='dashboard') renderDashboard();
   if (name==='calls') renderAllCalls();
 }
@@ -672,10 +680,11 @@ function switchView(name,btn) {
 // Called from dashboard tiles — switch view without needing a nav button ref
 function switchViewById(name, statusFilter){
   const btn = document.querySelector(`#bnav .ntab:nth-child(${name==='dashboard'?1:name==='customers'?2:3})`);
+  // Always reset first, then apply the specific filter if any
+  resetFilters();
   switchView(name, btn);
   if(statusFilter && name==='customers'){
     filterStatus = statusFilter;
-    // Highlight the right pill
     document.querySelectorAll('#status-filters .fpill').forEach(p=>{
       p.classList.toggle('active', p.dataset.val===statusFilter);
     });
