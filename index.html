@@ -600,12 +600,8 @@ const SEED=[["COCKY'S WAIUKU LTD - BUILDLINK","BUILDLINK HEAD OFFICE"],["MARTEN 
 ['PLACEMAKERS TE KUITI','PLACEMAKERS HEAD OFFICE','WAIKATO, NEW ZEALAND'],
 ['PLACEMAKERS WHAKATANE','PLACEMAKERS HEAD OFFICE','BAY OF PLENTY, NEW ZEALAND']];
 
-const SEED_VERSION = 2;  // bump to force re-seed on all devices
-if (customers.length === 0 || (LS.get("fsm_seed_ver")||0) < SEED_VERSION) {
-  LS.set("fsm_seed_ver", SEED_VERSION);
-  customers = SEED.map((s,i) => ({ id:'c'+i, name:s[0], group:s[1], region:(s[2]||'AUCKLAND, NEW ZEALAND'), status:'ok', address:'', phone:'', email:'', notes:'' }));
-  LS.set('fsm_customers', customers);
-}
+// SEED data is only used by seedAllToSupabase() — never auto-loaded.
+// Supabase is always the source of truth. localStorage is read-only cache.
 
 // ─────────────────────────────────────────────
 // IMAGE COMPRESSION  (max 200KB, 1200px wide)
@@ -1593,7 +1589,11 @@ async function syncFromSupabase(){
     setSyncDot('ok');
     buildFilterPills(); renderDashboard(); renderCustomers();
     // If Supabase is empty, show a prompt to seed/import
-    if(custs.length===0) showEmptyDBPrompt();
+    if(custs.length===0){
+      // Supabase is empty — clear local cache so it matches
+      LS.set('fsm_customers',[]);
+      showEmptyDBPrompt();
+    }
   } catch(e){ setSyncDot('err'); console.warn('Supabase sync failed, using local cache',e); }
 }
 
