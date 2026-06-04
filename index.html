@@ -231,7 +231,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <!-- ALL CALLS -->
   <div id="view-calls" class="view">
-    <div class="phdr"><h1>Call Log</h1></div>
+    <div class="phdr">
+      <h1>Call Log</h1>
+      <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Quick Log</button>
+    </div>
     <div id="all-calls-list" style="padding:0 18px"></div>
   </div>
 
@@ -989,6 +992,38 @@ async function saveMedia(){
   }
 }
 
+
+// ─────────────────────────────────────────────
+// QUICK LOG CALL — customer picker
+// ─────────────────────────────────────────────
+function openQuickLog(){
+  document.getElementById('ql-search').value='';
+  renderQLResults('');
+  openModal('m-quicklog');
+  setTimeout(()=>document.getElementById('ql-search').focus(), 100);
+}
+function renderQLResults(q){
+  const el=document.getElementById('ql-results');
+  let list=q
+    ? customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.group.toLowerCase().includes(q.toLowerCase()))
+    : [...customers].sort((a,b)=>a.name.localeCompare(b.name));
+  if(!list.length){el.innerHTML='<div class="empty">No customers found</div>';return;}
+  el.innerHTML=list.slice(0,40).map(c=>`
+    <div class="ccard" style="margin-bottom:8px" onclick="pickQLCustomer('${c.id}')">
+      <div class="cc-top">
+        <div>
+          <div class="cc-name" style="font-size:13px">${c.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${c.group}</div>
+        </div>
+        ${sbadge(c.status)}
+      </div>
+    </div>`).join('');
+}
+function pickQLCustomer(custId){
+  closeModal('m-quicklog');
+  openNewCall(custId);
+}
+
 // ─────────────────────────────────────────────
 // CONFIRM DELETE HELPER
 // ─────────────────────────────────────────────
@@ -1233,13 +1268,22 @@ function renderAllCalls(){
   if(!sorted.length){el.innerHTML='<div class="empty">No calls logged yet</div>';return;}
   el.innerHTML=sorted.map(c=>{
     const cust=customers.find(x=>x.id===(c.customer_id||c.customerId));
+    const atts=callAtts.filter(a=>(a.call_id||a.callId)===c.id);
+    const photos=atts.filter(a=>a.file_type&&a.file_type.startsWith('image'));
     return`<div class="kccard" onclick="openCustomer('${c.customer_id||c.customerId}')" style="cursor:pointer;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:500">${cust?cust.name:'—'}</span>
-        <span class="kdate">${fmtDate(c.call_date||c.date)}</span>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:600;line-height:1.2">${cust?cust.name:'Unknown customer'}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${cust?cust.group:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <span class="kdate" style="margin:0">${fmtDate(c.call_date||c.date)}</span>
+          ${cust?sbadge(cust.status):''}
+        </div>
       </div>
-      ${cust?`<div style="font-size:11px;color:var(--text3);margin-bottom:5px">${cust.group}</div>`:''}
-      <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,100)+(c.notes.length>100?'…':''):'<em>No notes</em>'}</div>
+      <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,120)+(c.notes.length>120?'…':''):'<em style="color:var(--text3)">No notes</em>'}</div>
+      ${photos.length?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${photos.slice(0,4).map(p=>`<img src="${p.url||p.storage_path}" style="width:52px;height:52px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+      ${atts.length?`<div style="margin-top:6px;font-size:11px;color:var(--text3)">${atts.length} attachment${atts.length>1?'s':''}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -1633,6 +1677,18 @@ window.addEventListener('offline', ()=>{
 });
 </script>
 
+
+<!-- ═══════ MODAL: QUICK LOG — CUSTOMER PICKER ═══════ -->
+<div class="moverlay" id="m-quicklog">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2>Quick Log Call</h2><button class="mclose" onclick="closeModal('m-quicklog')">×</button></div>
+    <div class="mbody" style="padding-top:10px">
+      <input type="text" id="ql-search" class="finput" placeholder="Search customer…" oninput="renderQLResults(this.value)" style="margin-bottom:12px">
+      <div id="ql-results" style="max-height:55vh;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
 <!-- ═══════ MODAL: CONFIRM DELETE ═══════ -->
 <div class="moverlay" id="m-confirm">
   <div class="msheet" style="max-height:auto">
