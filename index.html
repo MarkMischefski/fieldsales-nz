@@ -163,6 +163,151 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .upload-progress-bar{height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .3s;}
 /* ATTACHMENT CHIPS in calls */
 .achip{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:5px 10px;font-size:12px;color:var(--text2);cursor:pointer;margin:3px 3px 0 0;}
+
+/* ═══════════════════════════════════════════
+   DESKTOP LAYOUT  (≥ 900px)
+   Two-column: sidebar nav + content area
+   Customer detail slides in as right panel
+═══════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* Remove mobile max-width constraint */
+  body { max-width: 100%; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* ── Top header spans full width ── */
+  #hdr { max-width: 100%; position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 14px 28px; }
+  #hdr .logo { font-size: 18px; }
+
+  /* ── App shell below header ── */
+  #app-shell { display: flex; height: 100vh; padding-top: 57px; }
+
+  /* ── Sidebar nav ── */
+  #bnav {
+    position: fixed; left: 0; top: 57px; bottom: 0;
+    width: 200px; max-width: 200px;
+    flex-direction: column; justify-content: flex-start;
+    border-top: none; border-right: 1px solid var(--border);
+    padding: 16px 0; transform: none; left: 0;
+    height: calc(100vh - 57px);
+    overflow-y: auto;
+  }
+  .ntab {
+    flex: none; flex-direction: row; justify-content: flex-start;
+    padding: 12px 20px; gap: 12px; font-size: 13px;
+    border-radius: 0 8px 8px 0; margin: 2px 8px 2px 0;
+    letter-spacing: 0;
+  }
+  .ntab svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .ntab.active { background: rgba(79,126,240,.12); color: var(--accent); }
+
+  /* ── Main content area ── */
+  #main {
+    margin-left: 200px; flex: 1;
+    padding: 0; overflow-y: auto;
+    height: calc(100vh - 57px);
+    max-width: calc(100vw - 200px);
+  }
+
+  /* ── Wider page headers ── */
+  .phdr { padding: 28px 28px 14px; }
+  .phdr h1 { font-size: 26px; }
+
+  /* ── Dashboard: 4-col stats grid ── */
+  .sgrid { grid-template-columns: 1fr 1fr 1fr 1fr; padding: 0 28px 20px; gap: 14px; }
+  .scard { padding: 20px; }
+  .sval { font-size: 36px; }
+  .stitle { padding: 16px 28px 10px; }
+  #recent-calls { padding: 0 28px; }
+
+  /* ── Customer list: 2-col cards on wide screens ── */
+  .clist { padding: 0 28px; }
+  #customer-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .glabel { grid-column: 1 / -1; }
+  .frow { padding: 0 28px 14px; }
+  #status-filters, #group-filters, #region-filters { flex-wrap: wrap; overflow-x: visible; }
+  #filter-summary { padding: 2px 28px 10px; }
+  .filter-labels { padding: 0 28px 4px; }
+
+  /* ── Calls list ── */
+  #all-calls-list { padding: 0 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+
+  /* ── Customer detail: right panel instead of full-screen overlay ── */
+  #cdetail {
+    position: fixed; top: 57px; right: 0;
+    width: calc(100vw - 200px); max-width: 640px;
+    height: calc(100vh - 57px);
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform .25s ease;
+    overflow-y: auto;
+    box-shadow: -8px 0 32px rgba(0,0,0,.3);
+  }
+  #cdetail.open-desktop { transform: translateX(0); display: block; }
+
+  /* ── Modals: centred dialogs instead of bottom sheets ── */
+  .moverlay { align-items: center; }
+  .msheet {
+    border-radius: 16px;
+    max-width: 520px;
+    max-height: 85vh;
+    padding-bottom: 0;
+    margin: 0 auto;
+  }
+  .mhandle { display: none; }
+
+  /* ── Quick log: centred dialog ── */
+  #m-quicklog { align-items: center; }
+  #m-quicklog > div {
+    height: auto; max-height: 80vh;
+    border-radius: 16px;
+    margin: 0 auto;
+    max-width: 480px;
+  }
+  #ql-results { max-height: 50vh; }
+
+  /* ── Wider padding inside modals ── */
+  .mbody { padding: 24px; }
+  .mhdr { padding: 16px 24px; }
+
+  /* ── Filter section labels ── */
+  .filter-section-label { padding: 0 28px 4px !important; }
+
+  /* ── Detail tabs wider ── */
+  #dt-content { padding: 0 24px !important; }
+  .section-body, .sbody { padding: 0 24px; }
+
+  /* ── Scrollbars style (desktop) ── */
+  #main::-webkit-scrollbar { width: 6px; }
+  #main::-webkit-scrollbar-track { background: transparent; }
+  #main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  #cdetail::-webkit-scrollbar { width: 6px; }
+  #cdetail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── Bigger click targets on desktop ── */
+  .ccard:hover { border-color: var(--accent); background: var(--bg3); }
+  .fpill:hover { border-color: var(--accent); color: var(--text); }
+  .btn:hover { opacity: .88; }
+  .ntab:hover { color: var(--text2); background: rgba(255,255,255,.04); }
+}
+
+@media (min-width: 1200px) {
+  /* ── Even wider: sidebar 220px, detail panel up to 700px ── */
+  #bnav { width: 220px; }
+  #main { margin-left: 220px; max-width: calc(100vw - 220px); }
+  #cdetail { width: calc(100vw - 220px); max-width: 700px; }
+  #customer-list { grid-template-columns: 1fr 1fr 1fr; }
+  #all-calls-list { grid-template-columns: 1fr 1fr; }
+  .sgrid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+
+@media (min-width: 900px) {
+  #bnav { justify-content: flex-start; }
+  #bnav > div[style*="flex:1"] { display: block !important; }
+  .sidebar-export { color: var(--text3); }
+  .sidebar-export:hover { color: var(--text2); }
+  /* Hide the export buttons in page headers on desktop — sidebar has one */
+  .desktop-hide-export { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -183,7 +328,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <!-- DASHBOARD -->
   <div id="view-dashboard" class="view active">
-    <div class="phdr"><h1>Dashboard</h1><span id="today-date" style="font-size:13px;color:var(--text3)"></span></div>
+    <div class="phdr">
+      <h1>Dashboard</h1>
+      <button class="btn btn-s btn-sm" onclick="exportToExcel()">⬇ Export</button>
+    </div>
+    <div id="today-date" style="font-size:13px;color:var(--text3);padding:0 18px 4px"></div>
     <div class="sgrid">
       <div class="scard" onclick="switchViewById('customers')" style="cursor:pointer"><div class="slabel">Customers</div><div class="sval" id="st-total">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
       <div class="scard" onclick="switchViewById('calls')" style="cursor:pointer"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
@@ -205,7 +354,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
     <input type="file" id="bulk-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkImport(event)">
 
-    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
+    <div class="filter-section-label" style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Status</span></div>
     <div class="frow" id="status-filters" data-filtertype="status">
       <button class="fpill active" data-val="all">All</button>
       <button class="fpill" data-val="ok">All OK</button>
@@ -215,10 +364,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="fpill" data-val="inactive">Inactive</button>
     </div>
 
-    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
+    <div class="filter-section-label" style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Head Office</span></div>
     <div class="frow" id="group-filters" data-filtertype="group"></div>
 
-    <div style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Region</span></div>
+    <div class="filter-section-label" style="padding:0 18px 4px"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Region</span></div>
     <div class="frow" id="region-filters" data-filtertype="region"></div>
 
     <div id="filter-summary" style="display:none;padding:2px 18px 10px;align-items:center;justify-content:space-between">
@@ -233,15 +382,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="view-calls" class="view">
     <div class="phdr">
       <h1>Call Log</h1>
-      <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Quick Log</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s btn-sm" onclick="exportToExcel()">⬇ Export</button>
+        <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Quick Log</button>
+      </div>
     </div>
     <div id="all-calls-list" style="padding:0 18px"></div>
   </div>
 
 </div>
 
-<!-- ═══════ BOTTOM NAV ═══════ -->
+<!-- ═══════ BOTTOM / SIDE NAV ═══════ -->
 <nav id="bnav">
+  <!-- Desktop logo/brand in sidebar -->
+  <div class="sidebar-brand" style="display:none;padding:4px 20px 20px;font-size:15px;font-weight:600;letter-spacing:-.3px;color:var(--text3);border-bottom:1px solid var(--border);margin-bottom:8px">
+    Navigation
+  </div>
   <button class="ntab active" onclick="switchView('dashboard',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Dashboard
@@ -253,6 +409,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="ntab" onclick="switchView('calls',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.56 3.41 2 2 0 0 1 3.53 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.29 6.29l.87-.87a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
     Calls
+  </button>
+  <div style="flex:1"></div>
+  <!-- Export button in sidebar on desktop -->
+  <button class="ntab sidebar-export" onclick="exportToExcel()" style="margin-bottom:8px">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
   </button>
 </nav>
 
@@ -851,9 +1013,24 @@ function openCustomer(id){
     <div id="dt-content" style="padding:0 18px;padding-top:4px"></div>
   `;
   showTab('calls',id);
-  document.getElementById('cdetail').style.display='block';
+  const el = document.getElementById('cdetail');
+  if(window.innerWidth >= 900){
+    el.style.display = 'block';
+    requestAnimationFrame(()=>el.classList.add('open-desktop'));
+  } else {
+    el.style.display = 'block';
+  }
 }
-function closeDetail(){ document.getElementById('cdetail').style.display='none'; currentCustId=null; }
+function closeDetail(){
+  const el = document.getElementById('cdetail');
+  if(window.innerWidth >= 900){
+    el.classList.remove('open-desktop');
+    setTimeout(()=>{ el.style.display='none'; }, 260);
+  } else {
+    el.style.display='none';
+  }
+  currentCustId=null;
+}
 
 function showTab(tab,id){
   ['calls','media','contacts'].forEach(t=>{
@@ -1045,6 +1222,130 @@ function renderQLResults(q){
 function pickQLCustomer(custId){
   closeModal('m-quicklog');
   openNewCall(custId);
+}
+
+
+// ─────────────────────────────────────────────
+// EXPORT TO EXCEL
+// Generates a .xlsx with 4 sheets:
+//   1. Summary   — customer list with status + last call date
+//   2. Call Log  — all calls with customer name, date, notes
+//   3. Contacts  — all contacts linked to customers
+//   4. At Risk   — filtered view of at-risk / buys elsewhere
+// Uses SheetJS (loaded on demand)
+// ─────────────────────────────────────────────
+function exportToExcel(){
+  showToast('Preparing export…');
+  loadSheetJS(()=>doExport());
+}
+
+function doExport(){
+  try {
+    const wb = XLSX.utils.book_new();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-NZ',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+
+    // ── Sheet 1: Customer Summary ──
+    const custRows = [
+      ['Store / Branch','Head Office','Region','Status','Address','Phone','Email','Total Calls','Last Call Date','Notes']
+    ];
+    [...customers].sort((a,b)=>(a.group||'').localeCompare(b.group||'')||a.name.localeCompare(b.name)).forEach(c=>{
+      const cCalls = calls.filter(x=>(x.customer_id||x.customerId)===c.id);
+      const lastCall = cCalls.length
+        ? [...cCalls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date))[0]
+        : null;
+      const statusLabel = {ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[c.status]||c.status;
+      custRows.push([
+        c.name, c.group||'', c.region||'',
+        statusLabel,
+        c.address||'', c.phone||'', c.email||'',
+        cCalls.length,
+        lastCall ? (lastCall.call_date||lastCall.date) : '',
+        c.notes||''
+      ]);
+    });
+    const ws1 = XLSX.utils.aoa_to_sheet(custRows);
+    ws1['!cols'] = [40,30,20,15,30,15,25,10,15,40].map(w=>({wch:w}));
+    styleHeaderRow(ws1, custRows[0].length);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Customers');
+
+    // ── Sheet 2: Call Log ──
+    const callRows = [
+      ['Date','Customer','Head Office','Region','Status','Notes','Attachments']
+    ];
+    [...calls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date)).forEach(c=>{
+      const cust = customers.find(x=>x.id===(c.customer_id||c.customerId));
+      const atts = callAtts.filter(a=>(a.call_id||a.callId)===c.id);
+      const statusLabel = cust ? ({ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[cust.status]||cust.status) : '';
+      callRows.push([
+        c.call_date||c.date||'',
+        cust ? cust.name : '—',
+        cust ? (cust.group||'') : '',
+        cust ? (cust.region||'') : '',
+        statusLabel,
+        c.notes||'',
+        atts.length ? atts.map(a=>a.file_name||'').join(', ') : ''
+      ]);
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet(callRows);
+    ws2['!cols'] = [14,40,28,20,15,60,30].map(w=>({wch:w}));
+    styleHeaderRow(ws2, callRows[0].length);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Call Log');
+
+    // ── Sheet 3: Contacts ──
+    const ctRows = [
+      ['Customer','Head Office','Contact Name','Role','Phone','Email']
+    ];
+    contacts.forEach(ct=>{
+      const cust = customers.find(x=>x.id===(ct.customer_id||ct.customerId));
+      ctRows.push([
+        cust ? cust.name : '—',
+        cust ? (cust.group||'') : '',
+        ct.name||'', ct.role||'', ct.phone||'', ct.email||''
+      ]);
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet(ctRows);
+    ws3['!cols'] = [40,28,25,20,15,25].map(w=>({wch:w}));
+    styleHeaderRow(ws3, ctRows[0].length);
+    XLSX.utils.book_append_sheet(wb, ws3, 'Contacts');
+
+    // ── Sheet 4: At Risk / Buys Elsewhere ──
+    const riskRows = [
+      ['Store / Branch','Head Office','Region','Status','Total Calls','Last Call Date','Notes']
+    ];
+    customers.filter(c=>c.status==='risk'||c.status==='elsewhere').forEach(c=>{
+      const cCalls = calls.filter(x=>(x.customer_id||x.customerId)===c.id);
+      const lastCall = cCalls.length
+        ? [...cCalls].sort((a,b)=>new Date(b.call_date||b.date)-new Date(a.call_date||a.date))[0]
+        : null;
+      riskRows.push([
+        c.name, c.group||'', c.region||'',
+        {ok:'All OK',risk:'At Risk',elsewhere:'Buys Elsewhere',monitor:'Monitor',inactive:'Inactive'}[c.status]||c.status,
+        cCalls.length,
+        lastCall ? (lastCall.call_date||lastCall.date) : '',
+        c.notes||''
+      ]);
+    });
+    const ws4 = XLSX.utils.aoa_to_sheet(riskRows);
+    ws4['!cols'] = [40,28,20,15,10,15,40].map(w=>({wch:w}));
+    styleHeaderRow(ws4, riskRows[0].length);
+    XLSX.utils.book_append_sheet(wb, ws4, 'At Risk');
+
+    // ── Save file ──
+    XLSX.writeFile(wb, `FieldSales-Backup-${dateStr}.xlsx`);
+    showToast(`Exported ${customers.length} customers, ${calls.length} calls ✓`);
+  } catch(e){
+    showToast('Export failed: '+e.message);
+    console.error(e);
+  }
+}
+
+function styleHeaderRow(ws, colCount){
+  // Bold the first row
+  for(let c=0; c<colCount; c++){
+    const cell = ws[XLSX.utils.encode_cell({r:0,c})];
+    if(cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'1E2230'}}, alignment:{wrapText:false} };
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1709,7 +2010,7 @@ async function seedAllToSupabase(){
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'short',day:'numeric',month:'short'});
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 initFilterListeners();
 buildFilterPills();
 renderDashboard();
