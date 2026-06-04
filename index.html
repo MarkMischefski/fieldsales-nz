@@ -185,10 +185,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="view-dashboard" class="view active">
     <div class="phdr"><h1>Dashboard</h1><span id="today-date" style="font-size:13px;color:var(--text3)"></span></div>
     <div class="sgrid">
-      <div class="scard"><div class="slabel">Customers</div><div class="sval" id="st-total">—</div></div>
-      <div class="scard"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div></div>
-      <div class="scard"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div></div>
-      <div class="scard"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div></div>
+      <div class="scard" onclick="switchViewById('customers')" style="cursor:pointer"><div class="slabel">Customers</div><div class="sval" id="st-total">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
+      <div class="scard" onclick="switchViewById('calls')" style="cursor:pointer"><div class="slabel">Calls (7d)</div><div class="sval" id="st-calls">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div></div>
+      <div class="scard" onclick="switchViewById('customers','risk')" style="cursor:pointer"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
+      <div class="scard" onclick="switchViewById('customers','elsewhere')" style="cursor:pointer"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
     </div>
     <div class="stitle">Recent Calls</div>
     <div id="recent-calls" class="sbody"></div>
@@ -316,9 +316,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="moverlay" id="m-call">
   <div class="msheet">
     <div class="mhandle"></div>
-    <div class="mhdr"><h2>Log Sales Call</h2><button class="mclose" onclick="closeModal('m-call')">×</button></div>
+    <div class="mhdr"><h2 id="m-call-title">Log Sales Call</h2><button class="mclose" onclick="closeModal('m-call')">×</button></div>
     <div class="mbody">
       <input type="hidden" id="kc-custid">
+      <input type="hidden" id="kc-callid">
       <div class="fg"><label class="flabel">Customer</label><div id="kc-custname" style="font-size:15px;font-weight:500;padding:4px 0;color:var(--text2)"></div></div>
       <div class="fg"><label class="flabel">Call Date *</label><input type="date" id="kc-date" class="finput"></div>
       <div class="fg">
@@ -668,6 +669,20 @@ function switchView(name,btn) {
   if (name==='calls') renderAllCalls();
 }
 
+// Called from dashboard tiles — switch view without needing a nav button ref
+function switchViewById(name, statusFilter){
+  const btn = document.querySelector(`#bnav .ntab:nth-child(${name==='dashboard'?1:name==='customers'?2:3})`);
+  switchView(name, btn);
+  if(statusFilter && name==='customers'){
+    filterStatus = statusFilter;
+    // Highlight the right pill
+    document.querySelectorAll('#status-filters .fpill').forEach(p=>{
+      p.classList.toggle('active', p.dataset.val===statusFilter);
+    });
+    renderCustomers();
+  }
+}
+
 // ─────────────────────────────────────────────
 // DASHBOARD
 // ─────────────────────────────────────────────
@@ -846,7 +861,10 @@ function showTab(tab,id){
       return`<div class="kccard" style="margin-top:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span class="kdate">${fmtDate(call.call_date||call.date)}</span>
-          <button onclick="deleteCall('${call.id}','${id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">Delete</button>
+          <div style="display:flex;gap:12px">
+            <button onclick="openEditCall('${call.id}','${id}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px">Edit</button>
+            <button onclick="deleteCall('${call.id}','${id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px">Delete</button>
+          </div>
         </div>
         <div class="knote">${call.notes||'<em style="color:var(--text3)">No notes</em>'}</div>
         ${atts.length?`<div style="margin-top:8px;display:flex;flex-wrap:wrap">${atts.map(a=>a.file_type&&a.file_type.startsWith('image')?`<img src="${a.url||a.storage_path}" onclick="openLB('${a.url||a.storage_path}')" style="width:64px;height:64px;object-fit:cover;border-radius:6px;margin:3px;cursor:pointer">`:`<div class="achip">📎 ${a.file_name||a.name}</div>`).join('')}</div>`:''}
@@ -1052,10 +1070,30 @@ async function deleteDoc(docId, custId){
 // ─────────────────────────────────────────────
 function openNewCall(custId){
   const c=customers.find(x=>x.id===custId);
+  document.getElementById('kc-callid').value='';
   document.getElementById('kc-custid').value=custId;
   document.getElementById('kc-custname').textContent=c?c.name:'';
+  document.getElementById('m-call-title').textContent='Log Sales Call';
   document.getElementById('kc-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('kc-notes').value='';
+  document.getElementById('kc-status').value='';
+  document.getElementById('kc-photo-previews').innerHTML='';
+  document.getElementById('kc-doc-list').innerHTML='';
+  document.getElementById('kc-photo-progress').style.display='none';
+  pendingCallPhotos=[]; pendingCallDocs=[];
+  openModal('m-call');
+}
+
+function openEditCall(callId, custId){
+  const call=calls.find(c=>c.id===callId);
+  const cust=customers.find(x=>x.id===custId);
+  if(!call) return;
+  document.getElementById('kc-callid').value=callId;
+  document.getElementById('kc-custid').value=custId;
+  document.getElementById('kc-custname').textContent=cust?cust.name:'';
+  document.getElementById('m-call-title').textContent='Edit Call';
+  document.getElementById('kc-date').value=call.call_date||call.date||'';
+  document.getElementById('kc-notes').value=call.notes||'';
   document.getElementById('kc-status').value='';
   document.getElementById('kc-photo-previews').innerHTML='';
   document.getElementById('kc-doc-list').innerHTML='';
@@ -1128,10 +1166,12 @@ async function ensureInSupabase(localId){
 }
 
 async function saveCall(){
+  const existingCallId=document.getElementById('kc-callid').value;
   const custId=document.getElementById('kc-custid').value;
   const date=document.getElementById('kc-date').value;
   const notes=document.getElementById('kc-notes').value.trim();
   const statusUpd=document.getElementById('kc-status').value;
+  const isEdit=!!existingCallId;
   if(!date){ showToast('Please select a date'); return; }
   const btn=document.getElementById('save-call-btn');
   btn.disabled=true; btn.textContent='Saving…';
@@ -1139,6 +1179,24 @@ async function saveCall(){
   try {
     // Ensure customer exists in Supabase with a valid UUID
     const resolvedCustId = await ensureInSupabase(custId);
+
+    // EDIT existing call — just update notes + date, no new attachments
+    if(isEdit){
+      if(SB_READY){
+        await sb.update('calls', existingCallId, {call_date:date, notes});
+      }
+      const idx=calls.findIndex(c=>c.id===existingCallId);
+      if(idx>=0){ calls[idx]={...calls[idx], call_date:date, date, notes}; }
+      LS.set('fsm_calls',calls);
+      closeModal('m-call');
+      showToast('Call updated!');
+      setSyncDot('ok');
+      if(currentCustId===resolvedCustId) openCustomer(resolvedCustId);
+      renderDashboard();
+      btn.disabled=false; btn.textContent='Save Call';
+      return;
+    }
+
     let callId, callRec;
     if(SB_READY){
       const [saved]=await sb.insert('calls',{customer_id:resolvedCustId,call_date:date,notes});
@@ -1280,6 +1338,10 @@ function renderAllCalls(){
       <div class="knote" style="font-size:13px;color:var(--text2)">${c.notes?c.notes.substring(0,120)+(c.notes.length>120?'…':''):'<em style="color:var(--text3)">No notes</em>'}</div>
       ${photos.length?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${photos.slice(0,4).map(p=>`<img src="${p.url||p.storage_path}" style="width:52px;height:52px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
       ${atts.length?`<div style="margin-top:6px;font-size:11px;color:var(--text3)">${atts.length} attachment${atts.length>1?'s':''}</div>`:''}
+      <div style="display:flex;gap:12px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+        <button onclick="event.stopPropagation();openEditCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:0">Edit</button>
+        <button onclick="event.stopPropagation();deleteCall('${c.id}','${c.customer_id||c.customerId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0">Delete</button>
+      </div>
     </div>`;
   }).join('');
 }
