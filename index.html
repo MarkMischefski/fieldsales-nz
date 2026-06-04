@@ -343,12 +343,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="scard" onclick="switchViewById('customers','risk')" style="cursor:pointer"><div class="slabel" style="color:var(--amber)">At Risk</div><div class="sval" style="color:var(--amber)" id="st-risk">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
       <div class="scard" onclick="switchViewById('customers','elsewhere')" style="cursor:pointer"><div class="slabel" style="color:var(--red)">Buys Elsewhere</div><div class="sval" style="color:var(--red)" id="st-el">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
       <div class="scard" onclick="switchViewById('customers','monitor')" style="cursor:pointer"><div class="slabel" style="color:var(--purple)">Monitor</div><div class="sval" style="color:var(--purple)" id="st-monitor">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">View list →</div></div>
-      <div class="scard" id="st-followups-card" onclick="switchViewById('followups')" style="cursor:pointer;grid-column:1/-1;background:rgba(79,126,240,.06);border-color:rgba(79,126,240,.2)">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div><div class="slabel" style="color:var(--accent)">Outstanding Follow-ups</div><div class="sval" style="color:var(--accent)" id="st-followups">—</div></div>
-          <div style="font-size:11px;color:var(--text3)">View all →</div>
-        </div>
-        <div id="st-followups-next" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+      <div class="scard" id="st-followups-card" onclick="switchViewById('followups')" style="cursor:pointer;background:rgba(79,126,240,.06);border-color:rgba(79,126,240,.2)">
+        <div class="slabel" style="color:var(--accent)">Follow-ups</div>
+        <div class="sval" style="color:var(--accent)" id="st-followups">—</div>
+        <div id="st-followups-next" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">View all →</div>
       </div>
     </div>
     <div class="stitle">Recent Calls</div>
@@ -432,8 +431,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     <span style="position:relative">Follow-ups<span id="followup-badge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:99px;padding:1px 4px;min-width:14px;text-align:center"></span></span>
   </button>
-  <!-- Desktop-only: spacer + export button at bottom of sidebar -->
+  <!-- Desktop-only: spacer, new follow-up + export at bottom of sidebar -->
   <div class="desktop-only" style="display:none;flex:1"></div>
+  <button class="ntab desktop-only" onclick="openQuickLog()" style="display:none;margin-bottom:2px;color:var(--accent)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    New Follow-up
+  </button>
   <button class="ntab sidebar-export desktop-only" onclick="exportToExcel()" style="display:none;margin-bottom:8px">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Export
@@ -911,9 +914,9 @@ function renderDashboard() {
   if(overdue.length){ card.style.background='rgba(232,64,64,.08)'; card.style.borderColor='rgba(232,64,64,.25)'; document.querySelector('#st-followups-card .slabel').style.color='var(--red)'; document.getElementById('st-followups').style.color='var(--red)'; }
   else { card.style.background='rgba(79,126,240,.06)'; card.style.borderColor='rgba(79,126,240,.2)'; document.querySelector('#st-followups-card .slabel').style.color='var(--accent)'; document.getElementById('st-followups').style.color='var(--accent)'; }
   const nextEl=document.getElementById('st-followups-next');
-  if(overdue.length){ const cust=customers.find(x=>x.id===(overdue[0].customer_id||overdue[0].customerId)); nextEl.innerHTML=`<span style="color:var(--red)">⚠ ${overdue.length} overdue</span>${cust?' · '+cust.name:''}`;  }
-  else if(upcoming.length){ const cust=customers.find(x=>x.id===(upcoming[0].customer_id||upcoming[0].customerId)); nextEl.textContent=`Next: ${fmtDate(upcoming[0].followup_date)}${cust?' · '+cust.name:''}`; }
-  else if(!outstanding.length){ nextEl.textContent='No outstanding follow-ups'; }
+  if(overdue.length){ nextEl.innerHTML=`<span style="color:var(--red)">⚠ ${overdue.length} overdue</span>`; }
+  else if(upcoming.length){ nextEl.textContent=`Next: ${fmtDate(upcoming[0].followup_date)}`; }
+  else { nextEl.textContent='All clear'; }
   // Badge on nav tab
   const badge=document.getElementById('followup-badge');
   if(badge){ if(outstanding.length){ badge.textContent=outstanding.length>9?'9+':outstanding.length; badge.style.display='inline'; } else { badge.style.display='none'; } }
