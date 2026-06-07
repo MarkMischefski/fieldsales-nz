@@ -402,13 +402,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <!-- ALL CALLS -->
   <div id="view-calls" class="view">
     <div class="phdr">
-      <h1>Call Log</h1>
+      <h1>Calls</h1>
       <div style="display:flex;gap:8px">
         <button class="btn btn-s btn-sm desktop-only" onclick="exportToExcel()">⬇ Export</button>
+        <button class="btn btn-s btn-sm" onclick="openScheduleCall()">📅 Schedule</button>
         <button class="btn btn-p btn-sm" onclick="openQuickLog()">+ Log Call</button>
       </div>
     </div>
-    <div id="all-calls-list" style="padding:0 18px"></div>
+    <!-- Sub-tabs -->
+    <div class="tbar" style="margin:0;padding:0 18px;border-bottom:1px solid var(--border);margin-bottom:0">
+      <button class="tbtn active" id="calls-tab-scheduled" onclick="switchCallsTab('scheduled')">Scheduled <span id="scheduled-count-badge" style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:11px;margin-left:4px">0</span></button>
+      <button class="tbtn" id="calls-tab-log" onclick="switchCallsTab('log')">Call Log</button>
+    </div>
+    <div id="scheduled-calls-list" style="padding:0 18px"></div>
+    <div id="all-calls-list" style="padding:0 18px;display:none"></div>
   </div>
 
 </div>
@@ -697,11 +704,12 @@ const LS = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } },
   set(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
 };
-let customers = LS.get('fsm_customers');
-let calls     = LS.get('fsm_calls');
-let contacts  = LS.get('fsm_contacts');
-let custDocs  = LS.get('fsm_custdocs');
-let callAtts  = LS.get('fsm_callatts');
+let customers      = LS.get('fsm_customers');
+let calls          = LS.get('fsm_calls');
+let contacts       = LS.get('fsm_contacts');
+let custDocs       = LS.get('fsm_custdocs');
+let callAtts       = LS.get('fsm_callatts');
+let scheduledCalls = LS.get('fsm_scheduled');
 
 // ─────────────────────────────────────────────
 // SEED DATA (runs once if no customers)
@@ -877,7 +885,7 @@ function switchView(name,btn) {
   if (name==='customers') { resetFilters(); buildFilterPills(); renderCustomers(); }
   if (name==='followups') { resetFilters(); }
   if (name==='dashboard') renderDashboard();
-  if (name==='calls') renderAllCalls();
+  if (name==='calls') { switchCallsTab('scheduled'); }
   if (name==='followups') renderFollowups();
 }
 
@@ -905,6 +913,10 @@ function renderDashboard() {
   document.getElementById('st-total').textContent=customers.length;
   const ago=new Date(d-7*86400000);
   document.getElementById('st-calls').textContent=calls.filter(c=>new Date(c.call_date||c.date)>=ago).length;
+  // Scheduled calls count on calls tile
+  const pendingSC = scheduledCalls.filter(x=>!x.completed).length;
+  const callsTile = document.querySelector('#st-calls')?.parentElement;
+  if(callsTile){ const sub = callsTile.querySelector('.st-calls-sub') || document.createElement('div'); sub.className='st-calls-sub'; sub.style='font-size:11px;color:var(--text3);margin-top:2px'; sub.textContent = pendingSC > 0 ? pendingSC+' scheduled' : ''; if(!callsTile.querySelector('.st-calls-sub')) callsTile.appendChild(sub); }
   document.getElementById('st-risk').textContent=customers.filter(c=>c.status==='risk').length;
   document.getElementById('st-el').textContent=customers.filter(c=>c.status==='elsewhere').length;
   document.getElementById('st-monitor').textContent=customers.filter(c=>c.status==='monitor').length;
@@ -947,6 +959,326 @@ function sbadge(s){
   const [c,l]=m[s]||m.ok;
   return`<span class="sbadge ${c}">${l}</span>`;
 }
+
+// ═══════════════════════════════════════════════════════════
+// SCHEDULED CALLS
+// ═══════════════════════════════════════════════════════════
+
+// ── Calls view sub-tabs ──
+function switchCallsTab(tab){
+  const isScheduled = tab === 'scheduled';
+  document.getElementById('calls-tab-scheduled').classList.toggle('active', isScheduled);
+  document.getElementById('calls-tab-log').classList.toggle('active', !isScheduled);
+  document.getElementById('scheduled-calls-list').style.display = isScheduled ? '' : 'none';
+  document.getElementById('all-calls-list').style.display = isScheduled ? 'none' : '';
+  if(!isScheduled) renderAllCalls();
+  else renderScheduledCalls();
+}
+
+// ── Schedule Call modal ──
+let scDiscussionPoints = [];
+
+function openScheduleCall(prefillCustId){
+  document.getElementById('sc-id').value = '';
+  document.getElementById('sc-custid').value = prefillCustId || '';
+  document.getElementById('sc-cust-search').value = '';
+  document.getElementById('sc-date').value = '';
+  document.getElementById('sc-notes').value = '';
+  document.getElementById('sc-point-input').value = '';
+  document.getElementById('sc-cust-results').innerHTML = '';
+  scDiscussionPoints = [];
+  renderSCPoints();
+  const nameEl = document.getElementById('sc-cust-name');
+  if(prefillCustId){
+    const c = customers.find(x=>x.id===prefillCustId);
+    if(c){ nameEl.textContent = c.name; nameEl.style.display = 'block'; document.getElementById('sc-cust-search').style.display = 'none'; }
+  } else {
+    nameEl.style.display = 'none';
+    document.getElementById('sc-cust-search').style.display = '';
+  }
+  openModal('m-schedule');
+  if(!prefillCustId) setTimeout(()=>document.getElementById('sc-cust-search').focus(), 100);
+}
+
+function openEditScheduledCall(scId){
+  const sc = scheduledCalls.find(x=>x.id===scId);
+  if(!sc) return;
+  const c = customers.find(x=>x.id===sc.customer_id);
+  document.getElementById('sc-id').value = scId;
+  document.getElementById('sc-custid').value = sc.customer_id;
+  document.getElementById('sc-date').value = sc.scheduled_date || '';
+  document.getElementById('sc-notes').value = sc.notes || '';
+  document.getElementById('sc-point-input').value = '';
+  scDiscussionPoints = [...(sc.discussion_points || [])];
+  renderSCPoints();
+  document.getElementById('m-schedule-title').textContent = 'Edit Scheduled Call';
+  const nameEl = document.getElementById('sc-cust-name');
+  nameEl.textContent = c ? c.name : '';
+  nameEl.style.display = 'block';
+  document.getElementById('sc-cust-search').style.display = 'none';
+  document.getElementById('sc-cust-results').innerHTML = '';
+  openModal('m-schedule');
+}
+
+function renderSCResults(q){
+  const el = document.getElementById('sc-cust-results');
+  if(!q){ el.innerHTML = ''; return; }
+  const list = customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.group.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  el.innerHTML = list.map(c=>`
+    <div onclick="selectSCCustomer('${c.id}')" style="padding:8px 10px;cursor:pointer;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--border);margin-bottom:4px">
+      <div style="font-size:13px;font-weight:500">${c.name}</div>
+      <div style="font-size:11px;color:var(--text3)">${c.group}</div>
+    </div>`).join('');
+}
+
+function selectSCCustomer(custId){
+  const c = customers.find(x=>x.id===custId);
+  document.getElementById('sc-custid').value = custId;
+  document.getElementById('sc-cust-search').value = '';
+  document.getElementById('sc-cust-results').innerHTML = '';
+  const nameEl = document.getElementById('sc-cust-name');
+  nameEl.textContent = c ? c.name : '';
+  nameEl.style.display = 'block';
+}
+
+function addDiscussionPoint(){
+  const inp = document.getElementById('sc-point-input');
+  const val = inp.value.trim();
+  if(!val) return;
+  scDiscussionPoints.push(val);
+  inp.value = '';
+  renderSCPoints();
+  inp.focus();
+}
+
+function renderSCPoints(){
+  document.getElementById('sc-points-list').innerHTML = scDiscussionPoints.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px">
+      <span style="flex:1;font-size:13px">${p}</span>
+      <button onclick="removeSCPoint(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1">×</button>
+    </div>`).join('');
+}
+
+function removeSCPoint(i){
+  scDiscussionPoints.splice(i,1);
+  renderSCPoints();
+}
+
+async function saveScheduledCall(){
+  const custId = document.getElementById('sc-custid').value;
+  const date = document.getElementById('sc-date').value;
+  const notes = document.getElementById('sc-notes').value.trim();
+  const scId = document.getElementById('sc-id').value;
+  if(!custId){ showToast('Please select a customer'); return; }
+  if(!date){ showToast('Please set a date'); return; }
+  const btn = document.getElementById('sc-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const resolvedCustId = await ensureInSupabase(custId);
+    const data = { customer_id:resolvedCustId, scheduled_date:date, notes, discussion_points:scDiscussionPoints, completed:false };
+    if(scId){
+      // Edit
+      if(SB_READY && scId.includes('-')) await sb.update('scheduled_calls', scId, data);
+      const idx = scheduledCalls.findIndex(x=>x.id===scId);
+      if(idx>=0) scheduledCalls[idx] = {...scheduledCalls[idx], ...data};
+    } else {
+      // New
+      if(SB_READY){
+        const [saved] = await sb.insert('scheduled_calls', data);
+        scheduledCalls.push(saved);
+      } else {
+        scheduledCalls.push({id:'sc'+Date.now(), ...data});
+      }
+    }
+    LS.set('fsm_scheduled', scheduledCalls);
+    closeModal('m-schedule');
+    showToast('Scheduled ✓');
+    renderScheduledCalls();
+    renderDashboard();
+  } catch(e){ showToast('Error: '+e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
+async function deleteScheduledCall(scId){
+  confirmDelete('Delete scheduled call', 'Remove this scheduled call? This cannot be undone.', async ()=>{
+    if(SB_READY && scId.includes('-')) try{ await sb.delete('scheduled_calls', scId); }catch(e){}
+    scheduledCalls = scheduledCalls.filter(x=>x.id!==scId);
+    LS.set('fsm_scheduled', scheduledCalls);
+    renderScheduledCalls();
+    renderDashboard();
+    showToast('Deleted');
+  });
+}
+
+// ── Render scheduled calls ──
+function renderScheduledCalls(){
+  const today = new Date().toISOString().split('T')[0];
+  const el = document.getElementById('scheduled-calls-list');
+  const active = scheduledCalls.filter(x=>!x.completed).sort((a,b)=>a.scheduled_date.localeCompare(b.scheduled_date));
+  const recent = scheduledCalls.filter(x=>x.completed).sort((a,b)=>b.scheduled_date.localeCompare(a.scheduled_date)).slice(0,5);
+  // Update badge
+  const badge = document.getElementById('scheduled-count-badge');
+  if(badge) badge.textContent = active.length;
+  if(!active.length && !recent.length){
+    el.innerHTML = `<div class="empty" style="padding:40px 0">No scheduled calls yet<br>
+      <button class="btn btn-p" style="margin:12px auto 0;display:flex" onclick="openScheduleCall()">📅 Schedule a Call</button></div>`;
+    return;
+  }
+  let html = '';
+  // Overdue + today first
+  const overdue = active.filter(x=>x.scheduled_date < today);
+  const dueToday = active.filter(x=>x.scheduled_date === today);
+  const upcoming = active.filter(x=>x.scheduled_date > today);
+  if(overdue.length){
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--red);padding:16px 0 8px;border-bottom:1px solid rgba(232,64,64,.2);margin-bottom:10px">Overdue (${overdue.length})</div>`;
+    html += overdue.map(sc=>scheduledCard(sc, today)).join('');
+  }
+  if(dueToday.length){
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--green);padding:16px 0 8px;border-bottom:1px solid rgba(34,201,122,.2);margin-bottom:10px">Today (${dueToday.length})</div>`;
+    html += dueToday.map(sc=>scheduledCard(sc, today)).join('');
+  }
+  if(upcoming.length){
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">Upcoming (${upcoming.length})</div>`;
+    html += upcoming.map(sc=>scheduledCard(sc, today)).join('');
+  }
+  if(recent.length){
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:24px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;opacity:.6">Recently Completed</div>`;
+    html += recent.map(sc=>scheduledCard(sc, today, true)).join('');
+  }
+  el.innerHTML = html;
+}
+
+function scheduledCard(sc, today, completed=false){
+  const cust = customers.find(x=>x.id===sc.customer_id);
+  const isOverdue = !completed && sc.scheduled_date < today;
+  const isToday = !completed && sc.scheduled_date === today;
+  const borderCol = completed ? 'var(--text3)' : isOverdue ? 'var(--red)' : isToday ? 'var(--green)' : 'var(--border2)';
+  const pts = sc.discussion_points || [];
+  return `<div class="kccard" style="margin-bottom:10px;border-left:3px solid ${borderCol};${completed?'opacity:.6':''}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openCustomer('${sc.customer_id}')">
+        <div style="font-size:15px;font-weight:600">${cust?cust.name:'—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${cust?cust.group:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:600;color:${isOverdue?'var(--red)':isToday?'var(--green)':'var(--text2)'}">${fmtDate(sc.scheduled_date)}</div>
+        ${cust?`<div style="margin-top:3px">${sbadge(cust.status)}</div>`:''}
+      </div>
+    </div>
+    ${sc.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">${sc.notes}</div>`:''}
+    ${pts.length?`<div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px">Discussion Points</div>
+      ${pts.map(p=>`<div style="display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--text2);margin-bottom:4px"><span style="color:var(--accent);flex-shrink:0">•</span>${p}</div>`).join('')}
+    </div>`:''}
+    ${!completed?`<div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="openLogOutcome('${sc.id}')" class="btn btn-p btn-sm" style="flex:1">✓ Log Outcome</button>
+      <button onclick="openEditScheduledCall('${sc.id}')" class="btn btn-s btn-sm">Edit</button>
+      <button onclick="deleteScheduledCall('${sc.id}')" class="btn btn-sm" style="background:rgba(232,64,64,.1);color:var(--red);border:1px solid rgba(232,64,64,.2)">Delete</button>
+    </div>`:`<div style="font-size:12px;color:var(--text3)">Completed</div>`}
+  </div>`;
+}
+
+// ── Log outcome modal (converts scheduled → logged call) ──
+let ocRecognition = null, ocIsRec = false;
+
+function openLogOutcome(scId){
+  const sc = scheduledCalls.find(x=>x.id===scId);
+  if(!sc) return;
+  const cust = customers.find(x=>x.id===sc.customer_id);
+  document.getElementById('oc-scid').value = scId;
+  document.getElementById('oc-custid').value = sc.customer_id;
+  document.getElementById('oc-cust-name').textContent = cust ? cust.name : '—';
+  document.getElementById('oc-date-label').textContent = 'Scheduled: ' + fmtDate(sc.scheduled_date);
+  document.getElementById('oc-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('oc-notes').value = '';
+  document.getElementById('oc-followup-note').value = '';
+  document.getElementById('oc-followup-date').value = '';
+  document.getElementById('oc-status').value = '';
+  // Show discussion points as checklist
+  const pts = sc.discussion_points || [];
+  const ptsSec = document.getElementById('oc-points-section');
+  const ptsList = document.getElementById('oc-points-list');
+  if(pts.length){
+    ptsSec.style.display = '';
+    ptsList.innerHTML = pts.map((p,i)=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <input type="checkbox" id="oc-pt-${i}" style="margin-top:2px;flex-shrink:0;width:16px;height:16px;accent-color:var(--accent)">
+        <label for="oc-pt-${i}" style="font-size:14px;color:var(--text);cursor:pointer;flex:1">${p}</label>
+      </div>`).join('');
+  } else {
+    ptsSec.style.display = 'none';
+  }
+  openModal('m-outcome');
+}
+
+function toggleOutcomeVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){showToast('Voice not available');return;}
+  if(ocIsRec){ ocRecognition&&ocRecognition.stop(); return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  ocRecognition=new SR(); ocRecognition.continuous=true; ocRecognition.interimResults=true; ocRecognition.lang='en-NZ';
+  const btn=document.getElementById('oc-vbtn'), sta=document.getElementById('oc-vstatus'), ta=document.getElementById('oc-notes'), base=ta.value;
+  ocRecognition.onstart=()=>{ocIsRec=true;btn.style.background='var(--red)';sta.style.display='block';};
+  ocRecognition.onresult=ev=>{let t='';for(let i=ev.resultIndex;i<ev.results.length;i++)t+=ev.results[i][0].transcript;ta.value=(base?base+' ':'')+t;};
+  ocRecognition.onend=()=>{ocIsRec=false;btn.style.background='var(--accent)';sta.style.display='none';};
+  ocRecognition.start();
+}
+
+async function saveCallOutcome(){
+  const scId = document.getElementById('oc-scid').value;
+  const custId = document.getElementById('oc-custid').value;
+  const date = document.getElementById('oc-date').value;
+  const notes = document.getElementById('oc-notes').value.trim();
+  const followupNote = document.getElementById('oc-followup-note').value.trim();
+  const followupDate = document.getElementById('oc-followup-date').value || null;
+  const statusUpd = document.getElementById('oc-status').value;
+  if(!date){ showToast('Please select a date'); return; }
+  const btn = document.getElementById('oc-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  setSyncDot('syncing');
+  try {
+    const resolvedCustId = await ensureInSupabase(custId);
+    // Build notes with checked discussion points
+    const sc = scheduledCalls.find(x=>x.id===scId);
+    const pts = sc ? (sc.discussion_points||[]) : [];
+    let fullNotes = notes;
+    if(pts.length){
+      const checkedPts = pts.filter((_,i)=>document.getElementById(`oc-pt-${i}`)?.checked);
+      const uncheckedPts = pts.filter((_,i)=>!document.getElementById(`oc-pt-${i}`)?.checked);
+      let ptSummary = '';
+      if(checkedPts.length) ptSummary += '✓ Discussed: '+checkedPts.join(', ')+'. ';
+      if(uncheckedPts.length) ptSummary += '○ Not covered: '+uncheckedPts.join(', ')+'. ';
+      if(ptSummary) fullNotes = ptSummary + (notes ? '\n\n'+notes : '');
+    }
+    // Insert as a regular call
+    let callRec;
+    if(SB_READY){
+      const [saved] = await sb.insert('calls', {customer_id:resolvedCustId, call_date:date, notes:fullNotes, followup_note:followupNote||null, followup_date:followupDate||null});
+      callRec = saved;
+    } else {
+      callRec = {id:'k'+Date.now(), customer_id:custId, customerId:custId, call_date:date, date, notes:fullNotes, followup_note:followupNote||null, followup_date:followupDate||null};
+      calls.push(callRec); LS.set('fsm_calls',calls);
+    }
+    if(SB_READY) calls.push(callRec);
+    // Mark scheduled call as completed
+    if(SB_READY && scId.includes('-')) await sb.update('scheduled_calls', scId, {completed:true});
+    const scIdx = scheduledCalls.findIndex(x=>x.id===scId);
+    if(scIdx>=0) scheduledCalls[scIdx].completed = true;
+    LS.set('fsm_scheduled', scheduledCalls);
+    // Update customer status
+    if(statusUpd){
+      const idx = customers.findIndex(c=>c.id===resolvedCustId);
+      if(idx>=0){ customers[idx].status = statusUpd; if(SB_READY) await sb.update('customers',resolvedCustId,{status:statusUpd}); LS.set('fsm_customers',customers); }
+    }
+    closeModal('m-outcome');
+    showToast('Call logged ✓');
+    setSyncDot('ok');
+    renderScheduledCalls();
+    renderDashboard();
+    if(currentCustId===resolvedCustId) openCustomer(resolvedCustId);
+  } catch(e){ showToast('Error: '+e.message); setSyncDot('err'); }
+  finally { btn.disabled=false; btn.textContent='Save Call'; }
+}
+
 // ─── FILTER SYSTEM ───────────────────────────────────────────────────────────
 function shortLabel(g){ return (g||'').replace(' HEAD OFFICE','').replace(/ NATIONAL OFFICE.*$/,'').replace(' CO-OPERATIVE LTD',''); }
 function shortRegion(r){ return (r||'').replace(/, NEW ZEALAND$/i,'').replace(/, NZ$/i,''); }
@@ -2099,19 +2431,21 @@ async function syncFromSupabase(){
   if(!SB_READY){ setSyncDot(''); return; }
   setSyncDot('syncing');
   try {
-    const [custs,cls,cts,cdocs,catts]=await Promise.all([
+    const [custs,cls,cts,cdocs,catts,scs]=await Promise.all([
       sb.query('customers','?order=name.asc'),
       sb.query('calls','?order=call_date.desc'),
       sb.query('contacts',''),
       sb.query('customer_documents','?order=created_at.desc'),
-      sb.query('call_attachments','')
+      sb.query('call_attachments',''),
+      sb.query('scheduled_calls','?order=scheduled_date.asc').catch(()=>[])
     ]);
     cdocs.forEach(d=>{ d.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${d.storage_path}`; });
     catts.forEach(a=>{ if(a.storage_path) a.url=`${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${a.storage_path}`; });
     // Supabase wins — overwrite local cache completely
-    customers=custs; calls=cls; contacts=cts; custDocs=cdocs; callAtts=catts;
+    customers=custs; calls=cls; contacts=cts; custDocs=cdocs; callAtts=catts; scheduledCalls=scs;
     LS.set('fsm_customers',customers); LS.set('fsm_calls',calls);
     LS.set('fsm_contacts',contacts); LS.set('fsm_custdocs',custDocs); LS.set('fsm_callatts',callAtts);
+    LS.set('fsm_scheduled',scheduledCalls);
     setSyncDot('ok');
     buildFilterPills(); renderDashboard(); renderCustomers();
     // If Supabase is empty, show a prompt to seed/import
@@ -2216,6 +2550,101 @@ window.addEventListener('offline', ()=>{
     </div>
     <!-- Scrollable results — shrinks when keyboard appears -->
     <div id="ql-results" style="flex:1;overflow-y:auto;padding:0 18px 24px;-webkit-overflow-scrolling:touch"></div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: SCHEDULE CALL ═══════ -->
+<div class="moverlay" id="m-schedule">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2 id="m-schedule-title">Schedule Call</h2><button class="mclose" onclick="closeModal('m-schedule')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="sc-id">
+      <div class="fg">
+        <label class="flabel">Customer *</label>
+        <input type="text" id="sc-cust-search" class="finput" placeholder="Search customer…" oninput="renderSCResults(this.value)" autocomplete="off">
+        <input type="hidden" id="sc-custid">
+        <div id="sc-cust-name" style="font-size:14px;font-weight:500;color:var(--accent);padding:6px 0;display:none"></div>
+        <div id="sc-cust-results" style="max-height:160px;overflow-y:auto;margin-top:4px"></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Scheduled Date *</label>
+        <input type="date" id="sc-date" class="finput">
+      </div>
+      <div class="fg">
+        <label class="flabel">Discussion Points</label>
+        <div id="sc-points-list" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="sc-point-input" class="finput" placeholder="Add a discussion point…" onkeydown="if(event.key==='Enter'){event.preventDefault();addDiscussionPoint()}" style="flex:1">
+          <button class="btn btn-s btn-sm" onclick="addDiscussionPoint()" style="flex-shrink:0">+ Add</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Notes / Prep</label>
+        <textarea id="sc-notes" class="ftarea" rows="3" placeholder="Any preparation notes…"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-schedule')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" id="sc-save-btn" onclick="saveScheduledCall()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: LOG OUTCOME (for scheduled call) ═══════ -->
+<div class="moverlay" id="m-outcome">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhdr"><h2>Log Call Outcome</h2><button class="mclose" onclick="closeModal('m-outcome')">×</button></div>
+    <div class="mbody">
+      <input type="hidden" id="oc-scid">
+      <input type="hidden" id="oc-custid">
+      <div class="fg">
+        <div id="oc-cust-name" style="font-size:16px;font-weight:600;margin-bottom:4px"></div>
+        <div id="oc-date-label" style="font-size:13px;color:var(--text3)"></div>
+      </div>
+      <!-- Discussion points checklist -->
+      <div id="oc-points-section" style="display:none">
+        <label class="flabel">Discussion Points</label>
+        <div id="oc-points-list" style="margin-bottom:16px"></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Call Date</label>
+        <input type="date" id="oc-date" class="finput">
+      </div>
+      <div class="fg">
+        <label class="flabel">Call Notes <span style="color:var(--text3);font-size:11px;font-weight:400">— tap mic for voice</span></label>
+        <div class="note-row">
+          <textarea id="oc-notes" class="ftarea" rows="5" placeholder="What was discussed, outcomes, decisions…"></textarea>
+          <button id="oc-vbtn" onclick="toggleOutcomeVoice()" title="Voice to text" style="width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div id="oc-vstatus" style="font-size:12px;color:var(--red);margin-top:6px;display:none">● Recording… tap mic to stop</div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Update Status</label>
+        <select id="oc-status" class="fsel">
+          <option value="">— no change —</option>
+          <option value="ok">✓ All OK</option>
+          <option value="risk">⚠ At Risk</option>
+          <option value="elsewhere">✗ Buys Elsewhere</option>
+          <option value="monitor">◎ Monitor</option>
+          <option value="inactive">– Inactive</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="flabel">Follow-up Reminder</label>
+        <div style="background:rgba(79,126,240,.06);border:1px solid rgba(79,126,240,.15);border-radius:var(--r);padding:12px">
+          <input type="text" id="oc-followup-note" class="finput" placeholder="Follow-up note…" style="margin-bottom:8px">
+          <input type="date" id="oc-followup-date" class="finput">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="closeModal('m-outcome')">Cancel</button>
+        <button class="btn btn-p" style="flex:2" id="oc-save-btn" onclick="saveCallOutcome()">Save Call</button>
+      </div>
+    </div>
   </div>
 </div>
 <!-- ═══════ MODAL: CONFIRM DELETE ═══════ -->
