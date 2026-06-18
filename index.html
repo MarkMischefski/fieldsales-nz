@@ -19,7 +19,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
 /* HEADER */
-#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px 12px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+#hdr{display:none;background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px 12px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
 #hdr .logo{font-size:16px;font-weight:600;letter-spacing:-.3px;}
 #hdr .logo span{color:var(--accent);}
 #hdr-actions{display:flex;gap:8px;align-items:center;}
@@ -31,12 +31,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #sync-dot.err{background:var(--red);}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 /* BOTTOM NAV */
-#bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;}
+#bnav{display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;}
 .ntab{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 14px;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;border:none;background:none;font-family:'DM Sans',sans-serif;transition:color .15s;letter-spacing:.2px;}
 .ntab svg{width:22px;height:22px;}
 .ntab.active{color:var(--accent);}
 /* MAIN */
-#main{padding:0 0 90px;}
+#main{display:none;padding:0 0 90px;}
 .view{display:none;}
 .view.active{display:block;}
 /* PAGE HEADER */
@@ -320,6 +320,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 
+<!-- ═══════ LOGIN SCREEN ═══════ -->
+<div id="login-screen" style="position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:380px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px">Field<span style="color:var(--accent)">Sales</span> NZ</div>
+      <div style="font-size:13px;color:var(--text3)">Sign in to continue</div>
+    </div>
+    <div class="fg">
+      <label class="flabel">Email</label>
+      <input type="email" id="login-email" class="finput" placeholder="you@company.co.nz" autocomplete="username">
+    </div>
+    <div class="fg">
+      <label class="flabel">Password</label>
+      <input type="password" id="login-password" class="finput" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="login-error" style="display:none;font-size:13px;color:var(--red);margin-bottom:12px;padding:10px 12px;background:rgba(232,64,64,.08);border-radius:var(--rs)"></div>
+    <button class="btn btn-p" id="login-btn" style="width:100%;justify-content:center" onclick="doLogin()">Sign In</button>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:20px">
+      Need an account? Contact your administrator.
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ HEADER ═══════ -->
 <div id="hdr">
   <div class="logo">Field<span>Sales</span> NZ</div>
@@ -327,6 +350,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div id="sync-dot" title="Sync status"></div>
     <button class="icon-btn" onclick="openSearch()" title="Search">
       <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <button class="icon-btn" onclick="doLogout()" title="Sign out">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     </button>
   </div>
 </div>
@@ -656,39 +682,48 @@ const STORAGE_BUCKET = 'fieldsales-media';
 // ─────────────────────────────────────────────
 // SUPABASE CLIENT (lightweight, no npm needed)
 // ─────────────────────────────────────────────
+// Holds the logged-in user's access token once authenticated
+let userAccessToken = null;
+
+function authHeaders(extra={}) {
+  // Use the user's session token if logged in, otherwise fall back to anon key
+  // (RLS policies require a valid logged-in user, so anon-only calls will be rejected)
+  const token = userAccessToken || SUPABASE_ANON_KEY;
+  return { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+token, ...extra };
+}
+
 const sb = {
-  headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY },
   url: SUPABASE_URL,
 
   async query(table, params='') {
-    const r = await fetch(`${this.url}/rest/v1/${table}${params}`, { headers: this.headers });
+    const r = await fetch(`${this.url}/rest/v1/${table}${params}`, { headers: authHeaders() });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async insert(table, body) {
     const r = await fetch(`${this.url}/rest/v1/${table}`, {
-      method:'POST', headers:{...this.headers,'Prefer':'return=representation'}, body:JSON.stringify(body)
+      method:'POST', headers: authHeaders({'Prefer':'return=representation'}), body:JSON.stringify(body)
     });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async update(table, id, body) {
     const r = await fetch(`${this.url}/rest/v1/${table}?id=eq.${id}`, {
-      method:'PATCH', headers:{...this.headers,'Prefer':'return=representation'}, body:JSON.stringify(body)
+      method:'PATCH', headers: authHeaders({'Prefer':'return=representation'}), body:JSON.stringify(body)
     });
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
   async delete(table, id) {
     const r = await fetch(`${this.url}/rest/v1/${table}?id=eq.${id}`, {
-      method:'DELETE', headers: this.headers
+      method:'DELETE', headers: authHeaders()
     });
     if (!r.ok) throw new Error(await r.text());
   },
   async uploadFile(path, file, contentType) {
     const r = await fetch(`${this.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
       method:'POST',
-      headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':contentType, 'x-upsert':'true' },
+      headers: authHeaders({ 'Content-Type':contentType, 'x-upsert':'true' }),
       body: file
     });
     if (!r.ok) throw new Error(await r.text());
@@ -696,9 +731,40 @@ const sb = {
   },
   async deleteFile(path) {
     const r = await fetch(`${this.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
-      method:'DELETE', headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY }
+      method:'DELETE', headers: authHeaders()
     });
     if (!r.ok) throw new Error(await r.text());
+  },
+
+  // ── AUTH ──
+  async signIn(email, password) {
+    const r = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error_description || data.msg || 'Login failed');
+    return data; // { access_token, refresh_token, user, ... }
+  },
+  async signOut() {
+    if(!userAccessToken) return;
+    try {
+      await fetch(`${this.url}/auth/v1/logout`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+userAccessToken }
+      });
+    } catch(e){}
+  },
+  async refreshSession(refreshToken) {
+    const r = await fetch(`${this.url}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error('Session expired');
+    return data;
   }
 };
 
@@ -2504,35 +2570,113 @@ async function seedAllToSupabase(){
 }
 
 // ─────────────────────────────────────────────
-// INIT
+// AUTH — login, logout, session persistence
 // ─────────────────────────────────────────────
-document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-initFilterListeners();
-buildFilterPills();
-renderDashboard();
-// Show local cache immediately while Supabase loads
-if(customers.length>0) renderCustomers();
-// Then sync from Supabase (overwrites local cache)
-syncFromSupabase().then(()=>{
-  if(SB_READY) setInterval(syncFromSupabase, 60000);
-}).catch(()=>{
-  // Offline — show local cache
-  buildFilterPills(); renderCustomers();
-  if(SB_READY) setInterval(syncFromSupabase, 60000);
-});
+const SESSION_KEY = 'fsm_session';
 
-// Auto-sync interval is set after initial push (see init above)
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('hdr').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('bnav').style.display = 'none';
+}
+function hideLoginScreen(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('hdr').style.display = 'flex';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('bnav').style.display = 'flex';
+}
 
-// ── Sync when user returns to the app (tab focus / phone unlock) ──
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if(!email || !password){ errEl.textContent = 'Please enter email and password'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const session = await sb.signIn(email, password);
+    userAccessToken = session.access_token;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      email: session.user?.email || email
+    }));
+    hideLoginScreen();
+    startApp();
+  } catch(e){
+    errEl.textContent = e.message.includes('Invalid') ? 'Incorrect email or password' : e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+async function doLogout(){
+  confirmDelete('Sign out', 'Are you sure you want to sign out?', async ()=>{
+    await sb.signOut();
+    userAccessToken = null;
+    localStorage.removeItem(SESSION_KEY);
+    showLoginScreen();
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+  });
+}
+
+async function tryRestoreSession(){
+  const raw = localStorage.getItem(SESSION_KEY);
+  if(!raw){ showLoginScreen(); return false; }
+  try {
+    const session = JSON.parse(raw);
+    userAccessToken = session.access_token;
+    // Verify token still works with a lightweight query
+    await sb.query('customers','?limit=1');
+    return true;
+  } catch(e){
+    // Token expired — try refresh
+    try {
+      const session = JSON.parse(raw);
+      const refreshed = await sb.refreshSession(session.refresh_token);
+      userAccessToken = refreshed.access_token;
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+        email: session.email
+      }));
+      return true;
+    } catch(e2){
+      localStorage.removeItem(SESSION_KEY);
+      showLoginScreen();
+      return false;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// APP STARTUP (runs after successful login)
+// ─────────────────────────────────────────────
+function startApp(){
+  document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  initFilterListeners();
+  buildFilterPills();
+  renderDashboard();
+  if(customers.length>0) renderCustomers();
+  syncFromSupabase().then(()=>{
+    if(SB_READY) setInterval(syncFromSupabase, 60000);
+  }).catch(()=>{
+    buildFilterPills(); renderCustomers();
+    if(SB_READY) setInterval(syncFromSupabase, 60000);
+  });
+}
+
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible' && SB_READY){
+  if(document.visibilityState === 'visible' && SB_READY && userAccessToken){
     syncFromSupabase();
   }
 });
-
-// ── Sync when coming back online after losing connection ──
 window.addEventListener('online', ()=>{
-  if(SB_READY){
+  if(SB_READY && userAccessToken){
     showToast('Back online — syncing…');
     syncFromSupabase();
   }
@@ -2541,6 +2685,24 @@ window.addEventListener('offline', ()=>{
   setSyncDot('err');
   showToast('Offline — changes saved locally');
 });
+
+// ─────────────────────────────────────────────
+// BOOTSTRAP — check session before showing anything
+// ─────────────────────────────────────────────
+(async function bootstrap(){
+  if(!SB_READY){
+    // No Supabase configured — skip auth, run in local-only mode
+    hideLoginScreen();
+    startApp();
+    return;
+  }
+  showLoginScreen();
+  const restored = await tryRestoreSession();
+  if(restored){
+    hideLoginScreen();
+    startApp();
+  }
+})();
 </script>
 
 
