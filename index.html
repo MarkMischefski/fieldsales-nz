@@ -524,6 +524,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="mbody">
       <input type="hidden" id="ec-id">
       <div class="fg"><label class="flabel">Store / Branch Name *</label><input type="text" id="ec-name" class="finput" placeholder="e.g. Mitre 10 Albany"></div>
+      <div class="fg"><label class="flabel">ERP Account No</label><input type="text" id="ec-accno" class="finput" placeholder="e.g. 37" style="font-family:monospace"></div>
       <div class="fg"><label class="flabel">Head Account / Group</label><input type="text" id="ec-group" class="finput" placeholder="e.g. Mitre 10 Head Office"></div>
       <div class="fg"><label class="flabel">Region</label><input type="text" id="ec-region" class="finput" value="AUCKLAND, NEW ZEALAND"></div>
       <div class="fg"><label class="flabel">Status</label>
@@ -1457,7 +1458,7 @@ function openCustomer(id){
   document.getElementById('detail-content').innerHTML=`
     <div class="chero">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-        <div><div class="chero-name">${c.name}</div><div class="chero-group">${c.group}</div></div>
+        <div><div class="chero-name">${c.name}</div><div class="chero-group">${c.group}${c.erp_accno?` <span style="color:var(--text3);font-size:12px;font-family:monospace">· #${c.erp_accno}</span>`:''}</div></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-s btn-sm" onclick="openEditCustomer('${id}')">Edit</button>
           <button class="btn btn-sm" style="background:rgba(232,64,64,.12);color:var(--red);border:1px solid rgba(232,64,64,.2)" onclick="deleteCustomer('${id}')">Delete</button>
@@ -2222,7 +2223,7 @@ function renderAllCalls(){
 function openAddCustomer(){
   document.getElementById('m-cust-title').textContent='Add Customer';
   document.getElementById('ec-id').value='';
-  ['name','group','address','phone','email','notes'].forEach(f=>document.getElementById('ec-'+f).value='');
+  ['name','accno','group','address','phone','email','notes'].forEach(f=>document.getElementById('ec-'+f).value='');
   document.getElementById('ec-region').value='Auckland, New Zealand';
   document.getElementById('ec-status').value='ok';
   openModal('m-customer');
@@ -2232,6 +2233,7 @@ function openEditCustomer(id){
   document.getElementById('m-cust-title').textContent='Edit Customer';
   document.getElementById('ec-id').value=id;
   document.getElementById('ec-name').value=c.name;
+  document.getElementById('ec-accno').value=c.erp_accno||'';
   document.getElementById('ec-group').value=c.group||'';
   document.getElementById('ec-region').value=c.region||'Auckland, New Zealand';
   document.getElementById('ec-status').value=c.status||'ok';
@@ -2245,7 +2247,7 @@ async function saveCustomer(){
   const name=document.getElementById('ec-name').value.trim();
   if(!name){ showToast('Enter a name'); return; }
   const id=document.getElementById('ec-id').value;
-  const data={name,group:document.getElementById('ec-group').value.trim(),region:document.getElementById('ec-region').value.trim(),status:document.getElementById('ec-status').value,address:document.getElementById('ec-address').value.trim(),phone:document.getElementById('ec-phone').value.trim(),email:document.getElementById('ec-email').value.trim(),notes:document.getElementById('ec-notes').value.trim()};
+  const data={name,erp_accno:document.getElementById('ec-accno').value.trim()||null,group:document.getElementById('ec-group').value.trim(),region:document.getElementById('ec-region').value.trim(),status:document.getElementById('ec-status').value,address:document.getElementById('ec-address').value.trim(),phone:document.getElementById('ec-phone').value.trim(),email:document.getElementById('ec-email').value.trim(),notes:document.getElementById('ec-notes').value.trim()};
   setSyncDot('syncing');
   try {
     if(id){
@@ -2383,15 +2385,12 @@ function csvToRows(text){
 }
 
 function parseImportRows(rows){
-  // Find the right columns — handles HEAD ACCOUNT NAME / NAME / NZ_REGION
-  // and also simpler formats like Name / Group / Region
   const findCol=(row,candidates)=>{
     const keys=Object.keys(row);
     for(const c of candidates){
       const k=keys.find(k=>k.trim().toLowerCase()===c.toLowerCase());
       if(k) return k;
     }
-    // fallback: partial match
     for(const c of candidates){
       const k=keys.find(k=>k.toLowerCase().includes(c.toLowerCase()));
       if(k) return k;
@@ -2400,45 +2399,87 @@ function parseImportRows(rows){
   };
   if(!rows.length){ showToast('No data found in file'); return; }
   const sample=rows[0];
-  const nameCol  = findCol(sample,['NAME','Store Name','Branch Name','name']);
-  const groupCol = findCol(sample,['HEAD ACCOUNT NAME','Group','Head Office','Account','group']);
-  const regionCol= findCol(sample,['NZ_REGION','Region','region']);
+  const nameCol   = findCol(sample,['NAME','Store Name','Branch Name','name']);
+  const groupCol  = findCol(sample,['HEAD ACCOUNT NAME','Group','Head Office','Account','group']);
+  const regionCol = findCol(sample,['NZ_REGION','REGION','Region','region']);
+  const accnoCol  = findCol(sample,['ACCNO','ACC NO','ACCOUNT NO','AccountNo','ERP_ID','erp_accno']);
 
   if(!nameCol){ showToast('Cannot find a Name column in this file'); return; }
 
-  let added=0, skipped=0;
+  let added=0, updated=0, skipped=0;
+  const toSyncNew=[], toSyncUpdate=[];
+
   rows.forEach((row,i)=>{
     const name=(row[nameCol]||'').trim();
-    // skip blank rows and the "Applied filters" junk row Supabase exports append
+    // Skip blank rows and junk "Applied filters" export row
     if(!name || name.toLowerCase().startsWith('applied filter')) return;
-    // skip rows where the name looks like a header repeated
     if(name.toLowerCase()==='name') return;
-    if(customers.some(c=>c.name.toLowerCase()===name.toLowerCase())){
-      skipped++; return;
+
+    const accno  = accnoCol ? String(row[accnoCol]||'').trim() : '';
+    const group  = ((groupCol  ? (row[groupCol]||'') : '')).trim().toUpperCase();
+    const region = ((regionCol ? (row[regionCol]||'') : 'AUCKLAND, NEW ZEALAND')).trim().toUpperCase()||'AUCKLAND, NEW ZEALAND';
+
+    // ── Match strategy: ACCNO first, then name ──
+    let existingIdx = -1;
+    if(accno){
+      existingIdx = customers.findIndex(c=>String(c.erp_accno||'')===accno);
     }
-    const group =((groupCol  ? (row[groupCol] ||'') : '')).trim().toUpperCase();
-    const region=(regionCol ? (row[regionCol]||'') : 'AUCKLAND, NEW ZEALAND').trim().toUpperCase()||'AUCKLAND, NEW ZEALAND';
-    customers.push({
-      id:'c'+Date.now()+i,
-      name, group, region,
-      status:'ok', address:'', phone:'', email:'', notes:''
-    });
-    added++;
+    if(existingIdx<0){
+      existingIdx = customers.findIndex(c=>c.name.toUpperCase()===name.toUpperCase());
+    }
+
+    if(existingIdx>=0){
+      // Customer exists — update ERP fields but preserve all call/contact data
+      const existing = customers[existingIdx];
+      const changed = existing.name!==name || existing.group!==group ||
+                      existing.region!==region || String(existing.erp_accno||'')!==accno;
+      if(changed){
+        customers[existingIdx] = { ...existing, name, group, region, erp_accno:accno||existing.erp_accno||'' };
+        toSyncUpdate.push(customers[existingIdx]);
+        updated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      // New customer — add with ERP account number
+      const newCust = {
+        id:'c'+Date.now()+i,
+        name, group, region, erp_accno:accno,
+        status:'ok', address:'', phone:'', email:'', notes:''
+      };
+      customers.push(newCust);
+      toSyncNew.push(newCust);
+      added++;
+    }
   });
 
   LS.set('fsm_customers',customers);
   buildFilterPills(); renderCustomers();
-  const msg=skipped>0
-    ? `Imported ${added} new · ${skipped} already exist`
-    : `Imported ${added} customer${added!==1?'s':''}`;
-  showToast(msg);
-  // Also push new customers to Supabase so all devices get them
-  if(SB_READY && added>0){
-    const newOnes=customers.slice(-added);
-    Promise.all(newOnes.map(c=>sb.insert('customers',{
-      name:c.name, group:c.group, region:c.region,
-      status:c.status, address:c.address||'', phone:c.phone||'', email:c.email||'', notes:c.notes||''
-    }).catch(()=>{}))).then(()=>{ setSyncDot('ok'); showToast('Synced to cloud ✓'); });
+
+  const parts=[];
+  if(added)   parts.push(`${added} added`);
+  if(updated) parts.push(`${updated} updated`);
+  if(skipped) parts.push(`${skipped} unchanged`);
+  showToast(parts.join(' · ') || 'No changes');
+
+  // Push to Supabase — new inserts + updates for existing records
+  if(SB_READY){
+    const pushAll = [
+      ...toSyncNew.map(c=>sb.insert('customers',{
+        name:c.name, group:c.group, region:c.region, erp_accno:c.erp_accno||null,
+        status:c.status, address:'', phone:'', email:'', notes:''
+      }).catch(e=>console.warn('Insert failed:',c.name,e))),
+      ...toSyncUpdate.map(c=>{
+        if(!c.id||!String(c.id).includes('-')) return Promise.resolve();
+        return sb.update('customers',c.id,{
+          name:c.name, group:c.group, region:c.region, erp_accno:c.erp_accno||null
+        }).catch(e=>console.warn('Update failed:',c.name,e));
+      })
+    ];
+    Promise.all(pushAll).then(()=>{
+      setSyncDot('ok');
+      if(toSyncNew.length+toSyncUpdate.length>0) showToast('Synced to Supabase ✓');
+    });
   }
 }
 
@@ -2470,7 +2511,7 @@ function closeSearch(){ document.getElementById('srch-overlay').classList.remove
 function doSearch(q){
   const el=document.getElementById('srch-results');
   if(!q){el.innerHTML='';return;}
-  const r=customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.group.toLowerCase().includes(q.toLowerCase()));
+  const r=customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.group.toLowerCase().includes(q.toLowerCase())||(c.erp_accno&&String(c.erp_accno).includes(q)));
   if(!r.length){el.innerHTML='<div class="empty">No results</div>';return;}
   el.innerHTML=r.map(c=>`<div class="ccard" onclick="closeSearch();openCustomer('${c.id}')">
     <div class="cc-top"><div><div class="cc-name">${hl(c.name,q)}</div><div style="font-size:12px;color:var(--text3);margin-top:2px">${c.group}</div></div>${sbadge(c.status)}</div>
