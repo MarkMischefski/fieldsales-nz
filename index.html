@@ -1056,6 +1056,7 @@ function switchCallsTab(tab){
 
 // ── Schedule Call modal ──
 let scDiscussionPoints = [];
+let scPendingFiles = [];  // {file, previewUrl, isImage}
 
 function openScheduleCall(prefillCustId){
   document.getElementById('sc-id').value = '';
@@ -1065,7 +1066,10 @@ function openScheduleCall(prefillCustId){
   document.getElementById('sc-notes').value = '';
   document.getElementById('sc-point-input').value = '';
   document.getElementById('sc-cust-results').innerHTML = '';
+  document.getElementById('sc-file-previews').innerHTML = '';
+  document.getElementById('sc-paste-zone').style.display = 'none';
   scDiscussionPoints = [];
+  scPendingFiles = [];
   renderSCPoints();
   const nameEl = document.getElementById('sc-cust-name');
   if(prefillCustId){
@@ -1088,7 +1092,10 @@ function openEditScheduledCall(scId){
   document.getElementById('sc-date').value = sc.scheduled_date || '';
   document.getElementById('sc-notes').value = sc.notes || '';
   document.getElementById('sc-point-input').value = '';
+  document.getElementById('sc-file-previews').innerHTML = '';
+  document.getElementById('sc-paste-zone').style.display = 'none';
   scDiscussionPoints = [...(sc.discussion_points || [])];
+  scPendingFiles = [];
   renderSCPoints();
   document.getElementById('m-schedule-title').textContent = 'Edit Scheduled Call';
   const nameEl = document.getElementById('sc-cust-name');
@@ -1143,6 +1150,95 @@ function removeSCPoint(i){
   renderSCPoints();
 }
 
+
+// ─────────────────────────────────────────────
+// SCHEDULED CALL — file/image attachments
+// ─────────────────────────────────────────────
+async function handleSCFiles(e){
+  const files = Array.from(e.target.files);
+  for(const file of files){
+    await addSCFile(file);
+  }
+  e.target.value = '';
+}
+
+async function addSCFile(file){
+  let fileToAdd = file;
+  let previewUrl = null;
+  const isImage = file.type.startsWith('image/');
+  if(isImage){
+    fileToAdd = await compressImage(file);
+    previewUrl = URL.createObjectURL(fileToAdd);
+  }
+  const idx = scPendingFiles.length;
+  scPendingFiles.push({ file: fileToAdd, previewUrl, isImage, name: file.name });
+  renderSCFilePreviews();
+}
+
+function renderSCFilePreviews(){
+  const el = document.getElementById('sc-file-previews');
+  el.innerHTML = scPendingFiles.map((f, i) => {
+    if(f.isImage){
+      return `<div style="position:relative;display:inline-block">
+        <img src="${f.previewUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--rs);border:1px solid var(--border)">
+        <button onclick="removeSCFile(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);border:none;color:#fff;width:20px;height:20px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+      </div>`;
+    } else {
+      return `<div style="position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);padding:6px 10px;font-size:12px;color:var(--text2)">
+        📎 ${f.name.length>20?f.name.substring(0,18)+'…':f.name}
+        <button onclick="removeSCFile(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;line-height:1">×</button>
+      </div>`;
+    }
+  }).join('');
+}
+
+function removeSCFile(idx){
+  if(scPendingFiles[idx]?.previewUrl) URL.revokeObjectURL(scPendingFiles[idx].previewUrl);
+  scPendingFiles.splice(idx, 1);
+  renderSCFilePreviews();
+}
+
+// ── Paste from clipboard (screenshots!) ──
+async function scPasteImage(){
+  const zone = document.getElementById('sc-paste-zone');
+  try {
+    // Modern clipboard API
+    const items = await navigator.clipboard.read();
+    let found = false;
+    for(const item of items){
+      const imgType = item.types.find(t=>t.startsWith('image/'));
+      if(imgType){
+        const blob = await item.getType(imgType);
+        const file = new File([blob], 'pasted-image.png', { type: imgType });
+        await addSCFile(file);
+        found = true;
+        showToast('Image pasted ✓');
+        break;
+      }
+    }
+    if(!found){ showToast('No image found in clipboard'); }
+  } catch(e){
+    // Clipboard API not available or permission denied — show paste zone instead
+    zone.style.display = 'block';
+    zone.textContent = 'Clipboard access denied — use Ctrl+V / ⌘V in the notes field, or try the Files button';
+    showToast('Use Ctrl+V to paste after clicking in the notes area');
+  }
+}
+
+// ── Global paste listener — catches Ctrl+V / ⌘V anywhere in the schedule modal ──
+document.addEventListener('paste', async (e)=>{
+  // Only active when schedule modal is open
+  if(!document.getElementById('m-schedule').classList.contains('open')) return;
+  const items = Array.from(e.clipboardData?.items || []);
+  const imgItem = items.find(it=>it.type.startsWith('image/'));
+  if(!imgItem) return;
+  e.preventDefault();
+  const file = imgItem.getAsFile();
+  if(!file) return;
+  await addSCFile(file);
+  showToast('Screenshot pasted ✓');
+});
+
 async function saveScheduledCall(){
   const custId = document.getElementById('sc-custid').value;
   const date = document.getElementById('sc-date').value;
@@ -1155,6 +1251,7 @@ async function saveScheduledCall(){
   try {
     const resolvedCustId = await ensureInSupabase(custId);
     const data = { customer_id:resolvedCustId, scheduled_date:date, notes, discussion_points:scDiscussionPoints, completed:false };
+    let finalScId = scId;
     if(scId){
       // Edit
       if(SB_READY && scId.includes('-')) await sb.update('scheduled_calls', scId, data);
@@ -1165,9 +1262,40 @@ async function saveScheduledCall(){
       if(SB_READY){
         const [saved] = await sb.insert('scheduled_calls', data);
         scheduledCalls.push(saved);
+        finalScId = saved.id;
       } else {
-        scheduledCalls.push({id:'sc'+Date.now(), ...data});
+        finalScId = 'sc'+Date.now();
+        scheduledCalls.push({id:finalScId, ...data});
       }
+    }
+    // Upload any pending files as customer_documents (category = prep material)
+    if(scPendingFiles.length > 0){
+      btn.textContent = 'Uploading files…';
+      for(const pf of scPendingFiles){
+        try {
+          let url = null, storagePath = null;
+          const cat = pf.isImage ? 'Photo' : 'Other';
+          const caption = `Scheduled call prep · ${fmtDate(date)}`;
+          if(SB_READY){
+            storagePath = `customers/${resolvedCustId}/scheduled/${Date.now()}-${pf.file.name}`;
+            url = await sb.uploadFile(storagePath, pf.file, pf.file.type);
+            const [cdoc] = await sb.insert('customer_documents',{
+              customer_id:resolvedCustId, category:cat,
+              file_name:pf.file.name, file_type:pf.file.type,
+              storage_path:storagePath, size_bytes:pf.file.size, caption
+            });
+            custDocs.push({...cdoc, url});
+          } else {
+            // Local fallback
+            const dataUrl = await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(pf.file);});
+            custDocs.push({id:'d'+Date.now(), customer_id:resolvedCustId, customerId:resolvedCustId, category:cat,
+              file_name:pf.file.name, file_type:pf.file.type, url:dataUrl, storage_path:dataUrl,
+              size_bytes:pf.file.size, caption, date});
+            LS.set('fsm_custdocs', custDocs);
+          }
+        } catch(e){ console.warn('File upload failed:', pf.file.name, e); }
+      }
+      scPendingFiles = [];
     }
     LS.set('fsm_scheduled', scheduledCalls);
     closeModal('m-schedule');
@@ -1249,6 +1377,10 @@ function scheduledCard(sc, today, completed=false){
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px">Discussion Points</div>
       ${pts.map(p=>`<div style="display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--text2);margin-bottom:4px"><span style="color:var(--accent);flex-shrink:0">•</span>${p}</div>`).join('')}
     </div>`:''}
+    ${(()=>{ const docs=custDocs.filter(d=>(d.customer_id||d.customerId)===sc.customer_id&&(d.caption||'').includes('Scheduled call prep')); return docs.length?`<div style="margin-bottom:8px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Prep Files (${docs.length})</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${docs.map(d=>d.file_type&&d.file_type.startsWith('image')?`<img src="${d.url||d.storage_path}" onclick="openLB('${d.url||d.storage_path}')" style="width:56px;height:56px;object-fit:cover;border-radius:var(--rs);cursor:pointer;border:1px solid var(--border)">`:`<div class="achip">📎 ${d.file_name}</div>`).join('')}</div>
+    </div>`:''})()}
     ${!completed?`<div style="display:flex;gap:8px;margin-top:4px">
       <button onclick="openLogOutcome('${sc.id}')" class="btn btn-p btn-sm" style="flex:1">✓ Log Outcome</button>
       <button onclick="openEditScheduledCall('${sc.id}')" class="btn btn-s btn-sm">Edit</button>
@@ -2797,6 +2929,21 @@ window.addEventListener('offline', ()=>{
       <div class="fg">
         <label class="flabel">Notes / Prep</label>
         <textarea id="sc-notes" class="ftarea" rows="3" placeholder="Any preparation notes…"></textarea>
+      </div>
+      <div class="fg">
+        <label class="flabel">Documents & Images</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <button class="btn btn-s btn-sm" onclick="document.getElementById('sc-cam').click()" style="flex:1">📷 Camera</button>
+          <button class="btn btn-s btn-sm" onclick="document.getElementById('sc-files').click()" style="flex:1">📁 Files</button>
+          <button class="btn btn-s btn-sm" id="sc-paste-btn" onclick="scPasteImage()" style="flex:1">📋 Paste</button>
+        </div>
+        <input type="file" id="sc-cam" accept="image/*" capture="environment" multiple style="display:none" onchange="handleSCFiles(event)">
+        <input type="file" id="sc-files" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple style="display:none" onchange="handleSCFiles(event)">
+        <div id="sc-file-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+        <!-- Paste drop zone — visible hint -->
+        <div id="sc-paste-zone" style="border:1.5px dashed var(--border2);border-radius:var(--rs);padding:12px;text-align:center;font-size:12px;color:var(--text3);margin-top:8px;display:none">
+          Ctrl+V / ⌘V to paste a screenshot here
+        </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:6px">
         <button class="btn btn-s" style="flex:1" onclick="closeModal('m-schedule')">Cancel</button>
