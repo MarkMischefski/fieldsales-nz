@@ -394,8 +394,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="view-customers" class="view">
     <div class="phdr">
       <h1>Customers</h1>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-s btn-sm" onclick="document.getElementById('bulk-file').click()">Import</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn btn-s btn-sm" onclick="document.getElementById('bulk-file').click()">⬆ Import</button>
         <button class="btn btn-p btn-sm" onclick="openAddCustomer()">+ Add</button>
       </div>
     </div>
@@ -481,6 +481,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="ntab desktop-only" onclick="openQuickLog()" style="display:none;margin-bottom:2px;color:var(--purple)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     New Follow-up
+  </button>
+  <button class="ntab desktop-only" onclick="document.getElementById('bulk-file').click()" style="display:none;margin-bottom:2px;color:var(--teal)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Import
   </button>
   <button class="ntab sidebar-export desktop-only" onclick="exportToExcel()" style="display:none;margin-bottom:8px">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
